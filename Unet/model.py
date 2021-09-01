@@ -1,43 +1,9 @@
 import torch
-from torch.nn.modules.conv import Conv2d
-import torchvision
-from torchvision.datasets.utils import download_url
-from torch.utils.data import random_split
-from torchvision.datasets import ImageFolder
-from torchvision.transforms import ToTensor
-from torch.utils.data.dataloader import DataLoader
-
 import torch.nn as nn
-import torch.nn.functional as F
 
-
-class ImageSegmentationBase(nn.Module):
-    def training_step(self, batch):
-        images, labels = batch
-        out = self(images)                           # Generate predictions
-        loss = F.binary_cross_entropy(out, labels)   # Calculate loss
-        return loss
-    
-    def validation_step(self, batch):
-        images, labels = batch
-        out = self(images)                           # Generate predictions
-        loss = F.binary_cross_entropy(out, labels)   # Calculate loss
-        acc = accuracy(out, labels)                  # Calculate accuracy
-        return {'val_loss': loss.detach(), 'val_acc': acc}
-
-    def validation_epoch_end(self, outputs):
-        batch_losses = [x['val_loss'] for x in outputs]
-        epoch_loss = torch.stack(batch_losses).mean()   # Combine losses
-        batch_accs = [x['val_acc'] for x in outputs]
-        epoch_acc = torch.stack(batch_accs).mean()      # Combine accuracies
-        return {'val_loss': epoch_loss.item(), 'val_acc': epoch_acc.item()}
-    
-
-def accuracy(outputs, labels):
-    _, preds = torch.max(outputs, dim=1)
-    return torch.tensor(torch.sum(preds == labels).item() / len(preds))
-
-
+"""
+https://www.youtube.com/watch?v=67r38S7Y-mA
+"""
 
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -56,6 +22,7 @@ class ConvBlock(nn.Module):
         x= self.bn2(x)
         x = self.relu(x)
         return x
+
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -82,9 +49,9 @@ class DecoderBlock(nn.Module):
         return x
 
 
-class Unet(ImageSegmentationBase):
+class Unet(nn.Module):
     def __init__(self):
-        super().__init__()
+        super(Unet, self).__init__()
         """ Encoder """
         self.encoder1 = EncoderBlock(3, 64)
         self.encoder2 = EncoderBlock(64, 128)
@@ -124,6 +91,7 @@ class Unet(ImageSegmentationBase):
 if __name__ == "__main__":
     ## [batch, channels, height, width]
     inputs = torch.randn((2, 3, 512, 512))
+    print(inputs.shape)
     model = Unet()
     y = model(inputs)
     print(y.shape)
