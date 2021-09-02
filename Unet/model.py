@@ -69,6 +69,7 @@ class Unet(nn.Module):
 
         """ Classifier """
         self.outputs = nn.Conv2d(64, 1, kernel_size=1, padding=0) # binary
+        self.sigmoidify = nn.Sigmoid()
     
     def forward(self, inputs):
         skip1, pool1 = self.encoder1(inputs)
@@ -84,13 +85,15 @@ class Unet(nn.Module):
         decoded4 = self.decoder4(decoded3, skip1)
 
         outputs = self.outputs(decoded4)
+        final = self.sigmoidify(outputs)
 
-        return outputs
+        return final
 
 
 if __name__ == "__main__":
     ## [batch, channels, height, width]
-    inputs = torch.randn((2, 3, 512, 512))
+    print('you ran this file directly.')
+    inputs = torch.randn((1, 3, 512, 512))
     print(inputs.shape)
     model = Unet()
     y = model(inputs)

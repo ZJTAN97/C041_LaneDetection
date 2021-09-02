@@ -1,13 +1,9 @@
-from __future__ import print_function, division
 import os
-from matplotlib.transforms import Transform
 import torch
-import pandas as pd
 from skimage import io, transform
 import numpy as np
-import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
+import cv2 as cv
 
 
 class FloorPlanDataset(Dataset):
@@ -30,6 +26,12 @@ class FloorPlanDataset(Dataset):
         label_path = os.path.join(self.label_dir, self.file_names[index])
         train_image = io.imread(train_path)
         label_image = io.imread(label_path)
+
+        # train_image = cv.cvtColor(train_image, cv.COLOR_BGR2GRAY)
+        label_image = cv.cvtColor(label_image, cv.COLOR_BGR2GRAY)
+
+        # train_image = train_image[:, :, None]
+        label_image = label_image[:, :, None]
 
         sample = {
             'train': train_image,
@@ -80,6 +82,10 @@ class ToTensor(object):
         label = label.astype(np.float32)
         image = image.transpose((2, 0, 1))
         label = label.transpose((2, 0, 1))
+
+        image = np.expand_dims(image, axis=0)
+        label = np.expand_dims(label, axis=0)
+
         return {'train': torch.from_numpy(image),
                 'label': torch.from_numpy(label)}
 
