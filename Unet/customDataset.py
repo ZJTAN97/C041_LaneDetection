@@ -83,6 +83,7 @@ class ToTensor(object):
         image = image.transpose((2, 0, 1))
         label = label.transpose((2, 0, 1))
 
+        # Research on DataLoader to do batch sizing.
         image = np.expand_dims(image, axis=0)
         label = np.expand_dims(label, axis=0)
 
