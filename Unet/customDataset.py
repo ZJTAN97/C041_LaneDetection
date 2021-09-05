@@ -27,10 +27,7 @@ class FloorPlanDataset(Dataset):
         train_image = io.imread(train_path)
         label_image = io.imread(label_path)
 
-        # train_image = cv.cvtColor(train_image, cv.COLOR_BGR2GRAY)
         label_image = cv.cvtColor(label_image, cv.COLOR_BGR2GRAY)
-
-        # train_image = train_image[:, :, None]
         label_image = label_image[:, :, None]
 
         sample = {

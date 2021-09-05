@@ -19,23 +19,30 @@ from customDataset import FloorPlanDataset, Rescale, ToTensor
 # IMAGE PRE-PROCESSING #
 ########################
 
-TRAIN_DIR = 'data/train'
-LABEL_DIR = 'data/mask'
-FILE_NAMES = os.listdir('./data/train')
+TRAIN_DIR = 'data/sample_train'
+LABEL_DIR = 'data/sample_mask'
+FILE_NAMES = os.listdir('./data/sample_train')
 
 floorplan_dataset = FloorPlanDataset(TRAIN_DIR, LABEL_DIR, FILE_NAMES, transform=transforms.Compose([Rescale((512,512)), ToTensor()]))
+# dataloader = DataLoader(floorplan_dataset, batch_size=1, shuffle=False)
+dataloader = floorplan_dataset
+
+
+#################
+# TRAINING LOOP #
+#################
 
 model = Unet()
 criterion = nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-TRAIN = False
+TRAIN = True
 
-num_epochs = 10
-n_total_steps = len(floorplan_dataset)
+num_epochs = 20
+n_total_steps = len(dataloader)
 if TRAIN:
     for epoch in range(num_epochs):
-        for i, item in enumerate(floorplan_dataset):
+        for i, item in enumerate(dataloader):
 
             # Forward Pass
             predictions = model(item['train'])
@@ -50,22 +57,30 @@ if TRAIN:
 else:
     print('Loading trained model..')
 
-
-
-PATH = './cnn.pth'
+PATH = './cnn_sample.pth'
 torch.save(model.state_dict(), PATH)
 
-model.load_state_dict(torch.load(PATH))
 
-for i, item in enumerate(floorplan_dataset):
-    output = model(item['train'])
-    np_output = output.detach().numpy()[0, :, :, :]
-    np_output = np_output.transpose((1,2,0))
+##############
+# PREDICTION #
+##############
 
-    print(np_output.shape)
+PREDICT = False
 
-    sample_image(np_output)
+if PREDICT:
+    model.load_state_dict(torch.load(PATH))
 
-    if i == 5:
-        break
+    for i, item in enumerate(floorplan_dataset):
+        output = model(item['train'])
+        np_output = output.detach().numpy()[0, :, :, :]
+        np_output = np_output.transpose((1,2,0))
+
+        print(np_output.shape)
+
+        sample_image(np_output)
+
+        if i == 5:
+            break
+else:
+    print('skipped prediction.')
     
