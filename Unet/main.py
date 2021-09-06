@@ -19,13 +19,13 @@ from customDataset import FloorPlanDataset, Rescale, ToTensor
 # IMAGE PRE-PROCESSING #
 ########################
 
-TRAIN_DIR = 'data/sample_train'
-LABEL_DIR = 'data/sample_mask'
+TRAIN_DIR = 'data/sample_train/'
+LABEL_DIR = 'data/sample_mask/'
 FILE_NAMES = os.listdir('./data/sample_train')
 
+
 floorplan_dataset = FloorPlanDataset(TRAIN_DIR, LABEL_DIR, FILE_NAMES, transform=transforms.Compose([Rescale((512,512)), ToTensor()]))
-# dataloader = DataLoader(floorplan_dataset, batch_size=1, shuffle=False)
-dataloader = floorplan_dataset
+dataloader = DataLoader(floorplan_dataset, batch_size=1, shuffle=False)
 
 
 #################
@@ -37,11 +37,10 @@ criterion = nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 TRAIN = True
+EPOCHS = 15
 
-num_epochs = 20
-n_total_steps = len(dataloader)
 if TRAIN:
-    for epoch in range(num_epochs):
+    for epoch in range(EPOCHS):
         for i, item in enumerate(dataloader):
 
             # Forward Pass
@@ -53,7 +52,7 @@ if TRAIN:
             loss.backward()
             optimizer.step()
 
-            print(f'Epoch {epoch+1} / {num_epochs}, Step {i+1} / {len(floorplan_dataset)}, Loss: {loss.item():.4f}')
+            print(f'Epoch {epoch+1}/{EPOCHS}, Step {i+1}/{len(dataloader)}, Loss: {loss.item():.4f}')
 else:
     print('Loading trained model..')
 

@@ -15,7 +15,7 @@ class FloorPlanDataset(Dataset):
     
 
     def __len__(self):
-        return len(self.training_dir)
+        return len(self.file_names)
     
 
     def __getitem__(self, index):
@@ -81,8 +81,8 @@ class ToTensor(object):
         label = label.transpose((2, 0, 1))
 
         # Research on DataLoader to do batch sizing.
-        image = np.expand_dims(image, axis=0)
-        label = np.expand_dims(label, axis=0)
+        # image = np.expand_dims(image, axis=0)
+        # label = np.expand_dims(label, axis=0)
 
         return {'train': torch.from_numpy(image),
                 'label': torch.from_numpy(label)}
