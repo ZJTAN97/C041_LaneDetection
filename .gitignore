@@ -5,3 +5,4 @@ DroneImages
 *.pyc
 __pycache__
 *.pth
+Unet/__pycache__/customDataset.cpython-38.pyc

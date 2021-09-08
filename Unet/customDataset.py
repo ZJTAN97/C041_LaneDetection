@@ -1,6 +1,7 @@
 import os
 import torch
-from skimage import io, transform
+from skimage.transform import resize
+from skimage.io import imread
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import cv2 as cv
@@ -24,10 +25,8 @@ class FloorPlanDataset(Dataset):
 
         train_path = os.path.join(self.training_dir, self.file_names[index])
         label_path = os.path.join(self.label_dir, self.file_names[index])
-        train_image = io.imread(train_path)
-        label_image = io.imread(label_path)
-
-        label_image = cv.cvtColor(label_image, cv.COLOR_BGR2GRAY)
+        train_image = imread(train_path)
+        label_image = imread(label_path, as_gray=True)
         label_image = label_image[:, :, None]
 
         sample = {
@@ -61,8 +60,8 @@ class Rescale(object):
 
         new_h, new_w = int(new_h), int(new_w)
 
-        train_resized = transform.resize(train, (new_h, new_w))
-        label_resized = transform.resize(label, (new_h, new_w))
+        train_resized = resize(train, (new_h, new_w), mode='constant', preserve_range=True)
+        label_resized = resize(label, (new_h, new_w), mode='constant', preserve_range=True)
 
         return {'train': train_resized, 'label': label_resized}
 
