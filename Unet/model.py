@@ -84,10 +84,10 @@ class Unet(nn.Module):
         decoded3 = self.decoder3(decoded2, skip2)
         decoded4 = self.decoder4(decoded3, skip1)
 
-        outputs = self.outputs(decoded4)
-        final = self.sigmoidify(outputs)
+        outputs = self.sigmoidify(decoded4)
+        # final = self.sigmoidify(outputs)
 
-        return final
+        return outputs
 
 
 if __name__ == "__main__":

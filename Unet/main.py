@@ -70,11 +70,11 @@ if PREDICT:
 
     for i, item in enumerate(dataloader):
         output = model(item['train'])
-        thres = torch.tensor([0.8])
-        output = (output > thres).float() * 1
+        # thres = torch.tensor([0.8])
+        # output = (output > thres).float() * 1
 
-        print(output)
-        print(output.shape)
+        # print(output)
+        # print(output.shape)
 
         np_output = output.detach().numpy()[0, :, :, :]
         np_output = np_output.transpose((1,2,0))
