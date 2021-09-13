@@ -41,7 +41,6 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
             predictions = model(data)
             loss = loss_fn(predictions, targets)
 
-        
         # backward
         optimizer.zero_grad()
         scaler.scale(loss).backward()
@@ -50,7 +49,6 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
 
         # update tqdm loop
         loop.set_postfix(loss = loss.item())
-
 
 
 

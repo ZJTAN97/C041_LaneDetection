@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from customDataset2 import FloorPlanDataset
+from customDataset import FloorPlanDataset
 from torch.utils.data import DataLoader
 
 
