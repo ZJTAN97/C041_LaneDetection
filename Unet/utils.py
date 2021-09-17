@@ -11,7 +11,7 @@ def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
 
 def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
-    model.load_state_dict(checkpoint["state_dict"])
+    return model.load_state_dict(checkpoint["state_dict"])
 
 
 def get_loaders(
@@ -74,8 +74,8 @@ def check_accuracy(loader, model, device="cuda"):
                 (preds + y).sum() + 1e-8
             )
 
-    print(f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels*100:.2f}")
-    print(f"Dice score: {dice_score/len(loader)}")
+    print(f"Got {num_correct}/{num_pixels} with accuracy {num_correct/num_pixels*100:.3f}")
+    # print(f"Dice score: {dice_score/len(loader)}")
     model.train()
 
 

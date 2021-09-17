@@ -1,100 +1,93 @@
 import torch
 import torch.nn as nn
+from torch.nn.modules.batchnorm import BatchNorm2d
+import torchvision.transforms.functional as TF
+
 
 """
-https://www.youtube.com/watch?v=67r38S7Y-mA
+https://www.youtube.com/watch?v=IHq1t7NxS8k&t=1098s
+
 """
 
-class ConvBlock(nn.Module):
+class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(ConvBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU()
+        super(DoubleConv, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, dilation=1, bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, dilation=1, bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
 
-    def forward(self, inputs):
-        x = self.conv1(inputs)
-        x= self.bn1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x= self.bn2(x)
-        x = self.relu(x)
-        return x
+    def forward(self, x):
+        return self.conv(x)
 
 
-class EncoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(EncoderBlock, self).__init__()
-        self.conv = ConvBlock(in_channels, out_channels)
-        self.pool = nn.MaxPool2d((2,2))
+class UNet(nn.Module):
+    def __init__(self, in_channels=3, out_channels=1, features=[64, 128, 256, 512]):
+        super(UNet, self).__init__()
+        self.ups = nn.ModuleList()
+        self.downs = nn.ModuleList()
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
-    def forward(self, inputs):
-        x = self.conv(inputs)
-        p = self.pool(x)
-        return x, p
+        # Down part of Unet
+        for feature in features:
+            self.downs.append(DoubleConv(in_channels, feature))
+            in_channels = feature
 
+        
+        # Up part of Unet
+        for feature in reversed(features):
+            self.ups.append(
+                nn.ConvTranspose2d(
+                    feature*2, feature, kernel_size=2, stride=2,
+                )
+            )
+            self.ups.append(DoubleConv(feature*2, feature))
+        
 
-class DecoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(DecoderBlock, self).__init__()
-        self.up = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2, padding=0)
-        self.conv = ConvBlock(out_channels+out_channels, out_channels)
-
-    def forward(self, inputs, skip):
-        x = self.up(inputs)
-        x = torch.cat([x, skip], axis=1)
-        x = self.conv(x)
-        return x
-
-
-class Unet(nn.Module):
-    def __init__(self):
-        super(Unet, self).__init__()
-        """ Encoder """
-        self.encoder1 = EncoderBlock(3, 64)
-        self.encoder2 = EncoderBlock(64, 128)
-        self.encoder3 = EncoderBlock(128, 256)
-        self.encoder4 = EncoderBlock(256, 512)
-
-        """ Bottleneck """
-        self.bottleneck = ConvBlock(512, 1024)
-
-        """ Decoder """
-        self.decoder1 = DecoderBlock(1024, 512)
-        self.decoder2 = DecoderBlock(512, 256)
-        self.decoder3 = DecoderBlock(256, 128)
-        self.decoder4 = DecoderBlock(128, 64)
-
-        """ Classifier """
-        self.outputs = nn.Conv2d(64, 1, kernel_size=1, padding=0) # binary
-        self.sigmoidify = nn.Sigmoid()
+        self.bottleneck = DoubleConv(features[-1], features[-1]*2)
+        self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
     
-    def forward(self, inputs):
-        skip1, pool1 = self.encoder1(inputs)
-        skip2, pool2 = self.encoder2(pool1)
-        skip3, pool3 = self.encoder3(pool2)
-        skip4, pool4 = self.encoder4(pool3)
 
-        bottleneck = self.bottleneck(pool4)
+    def forward(self, x):
+        skip_connections = []
 
-        decoded1 = self.decoder1(bottleneck, skip4)
-        decoded2 = self.decoder2(decoded1, skip3)
-        decoded3 = self.decoder3(decoded2, skip2)
-        decoded4 = self.decoder4(decoded3, skip1)
+        # Down sampling
+        for down in self.downs:
+            x = down(x)
+            skip_connections.append(x)
+            x = self.pool(x)
 
-        outputs = self.sigmoidify(decoded4)
-        # final = self.sigmoidify(outputs)
+        
+        x = self.bottleneck(x)
+        skip_connections = skip_connections[::-1]
 
-        return outputs
+        # Up sampling
+        for idx in range(0, len(self.ups), 2):
+            x = self.ups[idx](x)
+            skip_connection = skip_connections[idx // 2]
+
+            if x.shape != skip_connection.shape:
+                x = TF.resize(x, size=skip_connection.shape[2:])
+
+            concat_skip = torch.cat((skip_connection, x), dim=1)
+            x = self.ups[idx+1](concat_skip)
+        
+
+        return self.final_conv(x)
+
+
+def test():
+    x = torch.randn((3, 1, 161, 161))
+    model = UNet(in_channels=1, out_channels=1)
+    preds = model(x)
+    print(preds.shape)
+    print(x.shape)
+    assert preds.shape == x.shape
 
 
 if __name__ == "__main__":
-    ## [batch, channels, height, width]
-    print('you ran this file directly.')
-    inputs = torch.randn((1, 3, 512, 512))
-    print(inputs.shape)
-    model = Unet()
-    y = model(inputs)
-    print(y.shape)
+    test()
