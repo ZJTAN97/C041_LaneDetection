@@ -6,3 +6,4 @@ DroneImages
 __pycache__
 *.pth
 *.pth.tar
+*.json
