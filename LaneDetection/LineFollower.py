@@ -12,7 +12,21 @@ def thresholding(img):
     mask = cv.inRange(hsv, lower, upper)
 
     return mask
-    
+
+
+def getContours(imgThres, img):
+
+    # find edges of image
+    contours, hierarchy = cv.findContours(imgThres, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    biggest = max(contours, key = cv.contourArea)
+    x, y, w, h = cv.boundingRect(biggest)
+    cx = x + w // 2
+    cy = y + h // 2
+
+    cv.drawContours(img, biggest, -1, (0,255,0), 7)
+    cv.circle(img, (cx, cy), 10, (255, 0, 0), cv.FILLED)
+
+
 
 while True:
     _, img = cap.read()
@@ -20,6 +34,7 @@ while True:
     # img = cv.flip(img, 0)
 
     imgThres = thresholding(img)
+    getContours(imgThres, img)
 
     cv.imshow("Output", img)
     cv.imshow("Output Thres", imgThres)
