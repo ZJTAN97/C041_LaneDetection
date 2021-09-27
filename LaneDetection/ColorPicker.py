@@ -5,10 +5,10 @@ import numpy as np
 frameWidth = 480
 frameHeight = 360
 
-# me = tello.Tello()
-# me.connect()
-# print(me.get_battery())
-# me.streamon()
+me = tello.Tello()
+me.connect()
+print(me.get_battery())
+me.streamon()
 
 def empty(a):
 
@@ -29,14 +29,14 @@ frameCounter = 0
 
 while True:
 
-    # img = me.get_frame_read().frame
+    img = me.get_frame_read().frame
 
-    _, img = cap.read()
+    # _, img = cap.read()
 
-    img = cv.imread('test2.jpg')
-    img = cv.resize(img, (frameWidth, frameHeight))
+    # img = cv.imread('test2.jpg')
+    # img = cv.resize(img, (frameWidth, frameHeight))
 
-    # img = cv.flip(img,0)
+    img = cv.flip(img,0)
 
     imgHsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
