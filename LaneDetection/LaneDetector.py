@@ -12,15 +12,26 @@ FORWARD_SPEED = 15
 CURVE = 0
 
 
-def drone_connect():
+# drone = tello.Tello()
+
+hsvVals = [0, 0, 117, 179, 22, 219]
+
+def thresholding(img):
+    hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+    lower = np.array([hsvVals[0], hsvVals[1], hsvVals[2]])
+    upper = np.array([hsvVals[3], hsvVals[4], hsvVals[5]])
+    mask = cv.inRange(hsv, lower, upper)
+
+    return mask
+
+
+def drone_connect(drone):
     """
     To connect to Tello Drone via djitellopy API
     """
-    drone = tello.Tello()
     drone.connect()
     print('--- Drone Connected ---')
     print(f'-- Drone Battery {drone.get_battery()}% ---')
-
 
 
 def get_translation(processedImg, img):
@@ -32,7 +43,7 @@ def get_translation(processedImg, img):
 
     ## Put predictions here
     contours, hierarchy = cv.findContours(processedImg, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-    if len(contours != 0):
+    if len(contours) != 0:
         biggest = max(contours, key=cv.contourArea)
         x, y, w, h = cv.boundingRect(biggest)
         translation_x = x + w // 2
@@ -40,9 +51,9 @@ def get_translation(processedImg, img):
 
         cv.drawContours(img, biggest, -1, (0, 255, 0), 7)
         cv.circle(img, (translation_x, translation_y), 10, (255, 0, 0), cv.FILLED)
+        cv.imshow('test',img)
     
     return translation
-    
 
     
 def get_rotation(processedImg, sensors):
@@ -69,6 +80,14 @@ def get_rotation(processedImg, sensors):
 
 
 def send_commands(rotation_vector, translation_x):
+    """
+    Send the commands to the drone based on the rotation and translation
+
+    Args:
+    rotation_vector
+    translation_x
+
+    """
 
     global curve
 
@@ -92,4 +111,18 @@ def send_commands(rotation_vector, translation_x):
     elif rotation_vector == [1, 0, 1]: curve = WEIGHTS[2]
 
 
-    drone.send_rc_control(left_right, FORWARD_SPEED, 0, curve)
+    # drone.send_rc_control(left_right, FORWARD_SPEED, 0, curve)
+
+
+cap = cv.VideoCapture(0)
+
+while True:
+    _, img = cap.read()
+    img = cv.resize(img, (FRAME_WIDTH, FRAME_HEIGHT))
+    
+    imgThres = thresholding(img)
+    translation_x = get_translation(imgThres, img)
+    rotation_vector = get_rotation(imgThres, SENSITIVITY)
+
+    cv.imshow("Output", imgThres)
+    cv.waitKey(1)

@@ -1,14 +1,14 @@
 import scipy.io
 import cv2 as cv
 
-mat = scipy.io.loadmat('label_workspace.mat')
+mat = scipy.io.loadmat('train1to5.mat')
 
 labels = list(mat.values())[3:]
 
 for i, label in enumerate(labels):
     # image = cv.imshow(label)
-    threshold, thresh = cv.threshold(label, 20, 255, cv.THRESH_BINARY)
-    cv.imwrite(f'test_{i}.jpg', thresh)
+    threshold, thresh = cv.threshold(label, 5, 255, cv.THRESH_BINARY)
+    cv.imwrite(f'./masked_images/image_{i}.jpg', thresh)
 
 # label = mat['maskedImage3']
 # gray = cv.cvtColor(label, cv.COLOR_BGR2GRAY)
