@@ -34,7 +34,7 @@ def getContours(imgThres, img):
     cx = 0
     # find edges of image
     contours, hierarchy = cv.findContours(imgThres, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-    if len(contours != 0):
+    if len(contours) != 0:
         biggest = max(contours, key = cv.contourArea)
         x, y, w, h = cv.boundingRect(biggest)
         cx = x + w // 2
