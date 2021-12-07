@@ -1,6 +1,6 @@
 from torch.utils.data.dataloader import DataLoader
 import torchvision
-from customDataset import FloorPlanDataset
+from custom_dataset import LaneDataset
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -22,10 +22,9 @@ IMAGE_WIDTH = 256
 PIN_MEMORY = True
 LOAD_MODEL = False
 
-TRAIN_IMG_DIR = "data/sample_train/"
-TRAIN_MASK_DIR = "data/sample_mask/"
-VAL_IMG_DIR = "data/sample_train/"
-VAL_MASK_DIR = "data/sample_mask/"
+
+VAL_IMG_DIR = "data/sample_test/"
+VAL_MASK_DIR = "data/mask/"
 
 
 def predict():
@@ -42,7 +41,7 @@ def predict():
         ],
     )
 
-    test_ds = FloorPlanDataset(
+    test_ds = LaneDataset(
         image_dir=VAL_IMG_DIR,
         mask_dir=VAL_MASK_DIR,
         transform=test_transforms

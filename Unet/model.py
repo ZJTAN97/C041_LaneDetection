@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from torch.nn.modules.batchnorm import BatchNorm2d
 import torchvision.transforms.functional as TF
 
 

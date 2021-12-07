@@ -18,10 +18,10 @@ IMAGE_WIDTH = 256
 PIN_MEMORY = True
 LOAD_MODEL = False
 
-TRAIN_IMG_DIR = "data/sample_train/"
-TRAIN_MASK_DIR = "data/sample_mask/"
-VAL_IMG_DIR = "data/sample_train/"
-VAL_MASK_DIR = "data/sample_mask/"
+TRAIN_IMG_DIR = "data/train/"
+TRAIN_MASK_DIR = "data/mask/"
+VAL_IMG_DIR = "data/train/"
+VAL_MASK_DIR = "data/mask/"
 
 
 def train_fn(loader, model, optimizer, loss_fn, scaler):

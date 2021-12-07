@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from customDataset import FloorPlanDataset
+from custom_dataset import LaneDataset
 from torch.utils.data import DataLoader
 
 
@@ -25,7 +25,7 @@ def get_loaders(
     num_workers=4,
     pin_memory=True,
 ):
-    train_ds = FloorPlanDataset(
+    train_ds = LaneDataset(
         image_dir=train_dir,
         mask_dir=train_maskdir,
         transform=train_transform,
@@ -39,7 +39,7 @@ def get_loaders(
         shuffle=True,
     )
 
-    val_ds = FloorPlanDataset(
+    val_ds = LaneDataset(
         image_dir=val_dir,
         mask_dir=val_maskdir,
         transform=val_transform,
