@@ -17,11 +17,8 @@ def load_checkpoint(checkpoint, model):
 def get_loaders(
     train_dir,
     train_maskdir,
-    val_dir,
-    val_maskdir,
     batch_size,
     train_transform,
-    val_transform,
     num_workers=4,
     pin_memory=True,
 ):
@@ -31,29 +28,29 @@ def get_loaders(
         transform=train_transform,
     )
 
+    train_set, val_set = torch.utils.data.random_split(train_ds, [28, 4])
+
     train_loader = DataLoader(
-        train_ds,
+        train_set,
         batch_size=batch_size,
         num_workers=num_workers,
         pin_memory=pin_memory,
         shuffle=True,
     )
 
-    val_ds = LaneDataset(
-        image_dir=val_dir,
-        mask_dir=val_maskdir,
-        transform=val_transform,
-    )
-
     val_loader = DataLoader(
-        val_ds,
+        val_set,
         batch_size=batch_size,
         num_workers=num_workers,
         pin_memory=pin_memory,
         shuffle=False,
     )
 
+    print(f'Training Quantity: {len(train_loader)}')
+    print(f'Validation Quantity: {len(val_loader)}')
+
     return train_loader, val_loader
+
 
 
 def check_accuracy(loader, model, device="cuda"):

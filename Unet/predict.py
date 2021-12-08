@@ -1,21 +1,13 @@
 from torch.utils.data.dataloader import DataLoader
 import torchvision
-from custom_dataset import LaneDataset
+from custom_dataset import LaneTestSet
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-
-from utils import get_loaders, check_accuracy, save_checkpoint
 from model import UNet
-import matplotlib.pyplot as plt
 
-
-LEARNING_RATE = 1e-4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 1
-NUM_EPOCHS = 20
 NUM_WORKERS = 2
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
@@ -23,8 +15,7 @@ PIN_MEMORY = True
 LOAD_MODEL = False
 
 
-VAL_IMG_DIR = "data/sample_test/"
-VAL_MASK_DIR = "data/mask/"
+TEST_IMG_DIR = "test_imgs/"
 
 
 def predict():
@@ -41,9 +32,8 @@ def predict():
         ],
     )
 
-    test_ds = LaneDataset(
-        image_dir=VAL_IMG_DIR,
-        mask_dir=VAL_MASK_DIR,
+    test_ds = LaneTestSet(
+        image_dir=TEST_IMG_DIR,
         transform=test_transforms
     )
 
@@ -58,8 +48,7 @@ def predict():
     checkpoint = torch.load('my_checkpoint.pth.tar')
     model.load_state_dict(checkpoint['state_dict'])
 
-    for i, (data, targets) in enumerate(test_loader):
-
+    for i, data in enumerate(test_loader):
         data = data.to(device=DEVICE)
         with torch.no_grad():
             preds = torch.sigmoid(model(data))
@@ -67,11 +56,8 @@ def predict():
 
 
         torchvision.utils.save_image(
-            preds, f'./saved_images/pred_{i}.jpg'
+            preds, f'./predicted_masks/pred_{i}.jpg'
         )
-
-        if i == 1:
-            break
 
 
 if __name__ == "__main__":

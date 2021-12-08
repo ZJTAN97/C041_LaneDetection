@@ -11,17 +11,17 @@ from model import UNet
 LEARNING_RATE = 1e-4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 1
-NUM_EPOCHS = 50
+NUM_EPOCHS = 85
 NUM_WORKERS = 2
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 PIN_MEMORY = True
 LOAD_MODEL = False
 
-TRAIN_IMG_DIR = "data/train/"
-TRAIN_MASK_DIR = "data/mask/"
-VAL_IMG_DIR = "data/train/"
-VAL_MASK_DIR = "data/mask/"
+ROOT_DIR = "../dataset"
+
+TRAIN_IMG_DIR = f"{ROOT_DIR}/train_imgs"
+TRAIN_MASK_DIR = f"{ROOT_DIR}/train_masks/"
 
 
 def train_fn(loader, model, optimizer, loss_fn, scaler):
@@ -30,7 +30,6 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
 
         data = data.to(device=DEVICE)
         targets = targets.float().unsqueeze(1).to(device=DEVICE)
-
 
         with torch.cuda.amp.autocast():
             predictions = model(data)
@@ -44,22 +43,9 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
         print(f'Step {index+1} / {len(loader)}')
 
 
-
 def main():
     
     train_transforms = A.Compose(
-        [
-            A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
-            A.Normalize(
-                mean=[0.0, 0.0, 0.0],
-                std=[1.0, 1.0, 1.0],
-                max_pixel_value=255.0,
-            ),
-            ToTensorV2(),
-        ],
-    )
-
-    val_transforms = A.Compose(
         [
             A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
             A.Normalize(
@@ -79,11 +65,8 @@ def main():
     train_loader, val_loader = get_loaders(
         TRAIN_IMG_DIR,
         TRAIN_MASK_DIR,
-        VAL_IMG_DIR,
-        VAL_MASK_DIR,
         BATCH_SIZE,
         train_transforms,
-        val_transforms,
         NUM_WORKERS,
         PIN_MEMORY,
     )
