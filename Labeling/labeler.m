@@ -1,4 +1,4 @@
-%test = imbinarize(maskedImage, 0.05);
-%image(test);
+test = imbinarize(maskedImage, 0.05);
+image(test);
 
-%all_labels = load('label_workspace.mat');
+all_labels = load('label_workspace.mat');
