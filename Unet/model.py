@@ -80,7 +80,7 @@ class UNet(nn.Module):
 
 
 def test():
-    x = torch.randn((3, 1, 161, 161))
+    x = torch.randn((3, 1, 128, 128))
     model = UNet(in_channels=1, out_channels=1)
     preds = model(x)
     print(preds.shape)

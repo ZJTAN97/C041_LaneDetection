@@ -1,5 +1,6 @@
 from torch.utils.data.dataloader import DataLoader
-import torchvision
+import cv2 as cv
+import numpy as np
 from custom_dataset import LaneTestSet
 import torch
 import albumentations as A
@@ -55,9 +56,25 @@ def predict():
             preds = (preds > 0.5).float()
 
 
-        torchvision.utils.save_image(
-            preds, f'./predicted_masks/pred_{i}.jpg'
-        )
+        prediction = preds.squeeze(0)
+        prediction = prediction.numpy()
+        prediction = np.swapaxes(prediction, 0, 1)
+        prediction = np.swapaxes(prediction, 1, 2)
+        prediction = cv.cvtColor(prediction, cv.COLOR_GRAY2BGR)
+
+        img = cv.imread('test_imgs/image_8.jpg')
+        img = cv.resize(img, (256,256))
+        img = img.astype(np.float32)
+        img /= 255.
+
+        result = cv.addWeighted(prediction, 1, img, 0.7, 0)    
+
+        cv.imshow('Tester', prediction)
+        cv.waitKey(0)
+
+        # torchvision.utils.save_image(
+        #     preds, f'./predicted_masks/pred_{i}.jpg'
+        # )
 
 
 if __name__ == "__main__":
