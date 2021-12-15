@@ -21,4 +21,4 @@ import os
 
 training_images = os.listdir('../unprocessed')
 for i, image in enumerate(training_images):
-    os.rename(f'../unprocessed/{image}', f'../unprocessed/image_{i + 10}.jpg')
+    os.rename(f'../unprocessed/{image}', f'../unprocessed/image_{i + 56}.jpg')

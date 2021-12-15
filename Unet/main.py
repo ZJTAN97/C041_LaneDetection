@@ -6,7 +6,7 @@ from albumentations.pytorch import ToTensorV2
 
 from utils import get_loaders, check_accuracy, save_checkpoint
 from model import UNet
-
+from dice_loss import DiceBCELoss
 
 LEARNING_RATE = 1e-4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -59,6 +59,7 @@ def main():
 
     model = UNet(in_channels=3, out_channels=1).to(DEVICE)
     loss_fn = nn.BCEWithLogitsLoss()
+    dice_loss_fn = DiceBCELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     scaler = torch.cuda.amp.GradScaler()
 
@@ -73,7 +74,7 @@ def main():
 
 
     for epoch in range(NUM_EPOCHS):
-        train_fn(train_loader, model, optimizer, loss_fn, scaler)
+        train_fn(train_loader, model, optimizer, dice_loss_fn, scaler)
 
         save_checkpoint({
             "state_dict": model.state_dict(),

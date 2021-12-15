@@ -1,4 +1,5 @@
 from torch.utils.data.dataloader import DataLoader
+import torchvision
 import cv2 as cv
 import numpy as np
 from custom_dataset import LaneTestSet
@@ -62,14 +63,15 @@ def predict():
         prediction = np.swapaxes(prediction, 1, 2)
         prediction = cv.cvtColor(prediction, cv.COLOR_GRAY2BGR)
 
-        img = cv.imread('test_imgs/image_8.jpg')
+        img = cv.imread(f'test_imgs/image_{i+1}.jpg')
         img = cv.resize(img, (256,256))
         img = img.astype(np.float32)
         img /= 255.
 
-        result = cv.addWeighted(prediction, 1, img, 0.7, 0)    
-
-        cv.imshow('Tester', prediction)
+        result = cv.addWeighted(prediction, 1, img, 0.7, 0)   
+         
+        cv.imshow('Actual', img)
+        cv.imshow('Predicted', prediction)
         cv.waitKey(0)
 
         # torchvision.utils.save_image(

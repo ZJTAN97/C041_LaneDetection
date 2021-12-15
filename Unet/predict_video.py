@@ -29,10 +29,10 @@ def predict():
     )
 
     model = UNet(in_channels=3, out_channels=1).to(device=DEVICE)
-    checkpoint = torch.load('my_checkpoint.pth.tar', map_location=torch.device('cpu'))
+    checkpoint = torch.load('./saved_weights/100_epoch_dice.pth.tar', map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['state_dict'])
 
-    cap = cv.VideoCapture('test_video_1fps.mp4')
+    cap = cv.VideoCapture('./test_videos/test_video_2_1fps.mp4')
 
     i = 0
 

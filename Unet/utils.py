@@ -4,7 +4,7 @@ from custom_dataset import LaneDataset
 from torch.utils.data import DataLoader
 
 
-def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
+def save_checkpoint(state, filename="my_checkpoint_new.pth.tar"):
     print("=> Saving checkpoint")
     torch.save(state, filename)
 
@@ -28,7 +28,7 @@ def get_loaders(
         transform=train_transform,
     )
 
-    train_set, val_set = torch.utils.data.random_split(train_ds, [28, 4])
+    train_set, val_set = torch.utils.data.random_split(train_ds, [70, 12])
 
     train_loader = DataLoader(
         train_set,
