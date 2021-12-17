@@ -97,7 +97,10 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 
     print("[INFO] EPOCH: {}/{}".format(e+1, config.NUM_EPOCHS))
     print("Train loss: {:.6f}, Test loss: {:.6f}".format(avg_train_loss, avg_test_loss))
-    torch.save(unet, config.MODEL_PATH)
+    torch.save({
+        "state_dict": unet.state_dict(),
+        "optimizer": optimizer.state_dict()
+    }, config.MODEL_PATH)
     print('saved weights successfully!')
 
 end_time = time.time()

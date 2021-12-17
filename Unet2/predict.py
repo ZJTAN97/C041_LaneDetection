@@ -1,13 +1,16 @@
 from config import config
+from config.model import UNet
 import numpy as np
 import torch
 import cv2 as cv
 import os
 
 
-def make_predictions(model, image_path):
-    # set model to evaluation mode
-    model.eval()
+def make_predictions(image_path):
+
+    model = UNet()
+    checkpoint = torch.load(config.PRE_TRAINED_WEIGHTS_PATH, map_location=torch.device('cpu'))
+    model.load_state_dict(checkpoint['state_dict'])
 
     # turn off gradient tracking
     with torch.no_grad():
@@ -46,13 +49,11 @@ def make_predictions(model, image_path):
 
 print("[INFO] loading up test image paths...")
 image_paths = open(config.TEST_PATHS).read().strip().split("\n")
-image_paths = np.random.choice(image_paths, size=2)
+image_paths = np.random.choice(image_paths, size=10)
 
-print("[INFO] loading model...")
-unet = torch.load(config.MODEL_PATH).to(config.DEVICE)
 
 for path in image_paths:
-    make_predictions(unet, path)
+    make_predictions(path)
 
 
 

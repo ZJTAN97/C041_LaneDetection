@@ -1,12 +1,15 @@
 from config import config
+from config.model import UNet
 import numpy as np
 import torch
 import cv2 as cv
-import os
 
-def make_predictions_video(model, video_path):
+def make_predictions_video(video_path):
 
-    model.eval()
+    model = UNet()
+    checkpoint = torch.load(config.PRE_TRAINED_WEIGHTS_PATH, map_location=torch.device('cpu'))
+    model.load_state_dict(checkpoint['state_dict'])
+
 
     cap = cv.VideoCapture(video_path)
 
@@ -17,7 +20,7 @@ def make_predictions_video(model, video_path):
             frame = cv.resize(frame, (config.INPUT_IMAGE_WIDTH, config.INPUT_IMAGE_HEIGHT))
             orig = frame.copy()
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-            frame = frame.astype("float32") / 2550.0
+            frame = frame.astype("float32") / 255.0
 
             frame = np.transpose(frame, (2,0,1))
             frame = np.expand_dims(frame, 0)
@@ -39,7 +42,5 @@ def make_predictions_video(model, video_path):
                 break
 
 
-unet = torch.load(config.MODEL_PATH).to(config.DEVICE)
-path = "../dataset/test_videos/test_video_1fps.mp4"
-print(path)
-make_predictions_video(unet, path)
+path = "../dataset/test_videos/test_video_lq_1fps.mp4"
+make_predictions_video(path)
