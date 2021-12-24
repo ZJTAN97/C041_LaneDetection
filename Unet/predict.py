@@ -1,83 +1,59 @@
-from torch.utils.data.dataloader import DataLoader
-import torchvision
-import cv2 as cv
+from config import config
+from config.model import UNet
 import numpy as np
-from custom_dataset import LaneTestSet
 import torch
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-from model import UNet
-
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 1
-NUM_WORKERS = 2
-IMAGE_HEIGHT = 256
-IMAGE_WIDTH = 256
-PIN_MEMORY = True
-LOAD_MODEL = False
+import cv2 as cv
+import os
 
 
-TEST_IMG_DIR = "test_imgs/"
+def make_predictions(image_path):
 
-
-def predict():
-
-    test_transforms = A.Compose(
-        [
-            A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
-            A.Normalize(
-                mean=[0.0, 0.0, 0.0],
-                std=[1.0, 1.0, 1.0],
-                max_pixel_value=255.0,
-            ),
-            ToTensorV2(),
-        ],
-    )
-
-    test_ds = LaneTestSet(
-        image_dir=TEST_IMG_DIR,
-        transform=test_transforms
-    )
-
-    test_loader = DataLoader(
-        test_ds,
-        batch_size=BATCH_SIZE,
-        num_workers=NUM_WORKERS,
-        pin_memory=PIN_MEMORY,
-    )
-
-    model = UNet(in_channels=3, out_channels=1).to(device=DEVICE)
-    checkpoint = torch.load('my_checkpoint.pth.tar', map_location=torch.device('cpu'))
+    model = UNet()
+    checkpoint = torch.load(config.PRE_TRAINED_WEIGHTS_PATH, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['state_dict'])
 
-    for i, data in enumerate(test_loader):
-        data = data.to(device=DEVICE)
-        with torch.no_grad():
-            preds = torch.sigmoid(model(data))
-            preds = (preds > 0.5).float()
+    # turn off gradient tracking
+    with torch.no_grad():
+        image = cv.imread(image_path)
+        image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+        image = image.astype("float32") / 255.0
+
+        image = cv.resize(image, (config.INPUT_IMAGE_WIDTH, config.INPUT_IMAGE_HEIGHT))
+        orig = image.copy()
+
+        file_name = image_path.split(os.path.sep)[-1]
+        ground_truth_path = os.path.join(config.MASK_DATASET_PATH, file_name)
+
+        ground_truth_mask = cv.imread(ground_truth_path, 0)
+        ground_truth_mask = cv.resize(ground_truth_mask, (config.INPUT_IMAGE_WIDTH, config.INPUT_IMAGE_HEIGHT))
 
 
-        prediction = preds.squeeze(0)
-        prediction = prediction.numpy()
-        prediction = np.swapaxes(prediction, 0, 1)
-        prediction = np.swapaxes(prediction, 1, 2)
-        prediction = cv.cvtColor(prediction, cv.COLOR_GRAY2BGR)
+        image = np.transpose(image, (2,0,1))
+        image = np.expand_dims(image, 0)
+        image = torch.from_numpy(image).to(config.DEVICE)
 
-        img = cv.imread(f'test_imgs/image_{i+1}.jpg')
-        img = cv.resize(img, (256,256))
-        img = img.astype(np.float32)
-        img /= 255.
+        pred_mask = model(image).squeeze()
+        pred_mask = torch.sigmoid(pred_mask)
+        pred_mask = pred_mask.cpu().numpy()
 
-        result = cv.addWeighted(prediction, 1, img, 0.7, 0)   
-         
-        cv.imshow('Actual', img)
-        cv.imshow('Predicted', prediction)
+        pred_mask = (pred_mask > config.THRESHOLD) * 255
+        pred_mask = pred_mask.astype(np.uint8)
+
+        ground_truth_mask_colored = cv.cvtColor(ground_truth_mask, cv.COLOR_GRAY2RGB)
+        pred_mask_colored = cv.cvtColor(pred_mask, cv.COLOR_GRAY2RGB)
+        stacked = np.concatenate((orig, ground_truth_mask_colored, pred_mask_colored), axis=1)
+        cv.imshow('pred_mask', stacked)
         cv.waitKey(0)
 
-        # torchvision.utils.save_image(
-        #     preds, f'./predicted_masks/pred_{i}.jpg'
-        # )
 
 
-if __name__ == "__main__":
-    predict()
+print("[INFO] loading up test image paths...")
+image_paths = open(config.TEST_PATHS).read().strip().split("\n")
+image_paths = np.random.choice(image_paths, size=10)
+
+
+for path in image_paths:
+    make_predictions(path)
+
+
+

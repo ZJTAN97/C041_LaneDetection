@@ -12,12 +12,6 @@ def preprocessing():
     parser.add_argument("--mat")
     parser.add_argument("--exist")
     args = parser.parse_args()
-
-    # existing_count = args.exist
-    # if args.exist:
-    #     existing_count = args.exist
-    # else:
-    #     existing_count = 0
     
     if args.mat == None:
         raise FileNotFoundError("File path does not exist. Include --mat arg to indicate file path")
@@ -29,17 +23,6 @@ def preprocessing():
     MASK_DIR = "../train_masks"
     MATLAB_MATRIX = args.mat
     EXIST = int(args.exist)
-
-    # if existing_count == 0:
-    #     SLICER = 0
-    # else: 
-    #     SLICER = existing_count + 1
-
-
-    # training_images = os.listdir(f'{TRAIN_DIR}')[SLICER:]
-    # for i, image in enumerate(training_images):
-    #     os.rename(f'{TRAIN_DIR}/{image}', f'{TRAIN_DIR}/image_{i + SLICER}.jpg')
-
 
     mat = scipy.io.loadmat(f'{MATLAB_DIR}/{MATLAB_MATRIX}')
     labels = list(mat.values())[3:]
