@@ -1,0 +1,13 @@
+../dataset\train_imgs\image_36.jpg
+../dataset\train_imgs\image_0.jpg
+../dataset\train_imgs\image_29.jpg
+../dataset\train_imgs\image_37.jpg
+../dataset\train_imgs\image_25.jpg
+../dataset\train_imgs\image_34.jpg
+../dataset\train_imgs\image_18.jpg
+../dataset\train_imgs\image_57.jpg
+../dataset\train_imgs\image_12.jpg
+../dataset\train_imgs\image_2.jpg
+../dataset\train_imgs\image_53.jpg
+../dataset\train_imgs\image_39.jpg
+../dataset\train_imgs\image_70.jpg
