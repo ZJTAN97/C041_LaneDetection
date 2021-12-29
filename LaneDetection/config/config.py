@@ -34,9 +34,9 @@ WEIGHT_DECAY = 2e-4
 
 
 # threshold to filter weak predictions
-THRESHOLD = 0.55
+THRESHOLD = 0.4
 
-BASE_OUTPUT = "output"
+BASE_OUTPUT = "weights"
 
 
 # define the path to the output serialized model, model training

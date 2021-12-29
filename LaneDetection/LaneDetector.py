@@ -16,6 +16,7 @@ CURVE = 0
 
 hsvVals = [0, 0, 117, 179, 22, 219]
 
+
 def thresholding(img):
     hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
     lower = np.array([hsvVals[0], hsvVals[1], hsvVals[2]])
@@ -30,8 +31,8 @@ def drone_connect(drone):
     To connect to Tello Drone via djitellopy API
     """
     drone.connect()
-    print('--- Drone Connected ---')
-    print(f'-- Drone Battery {drone.get_battery()}% ---')
+    print("--- Drone Connected ---")
+    print(f"-- Drone Battery {drone.get_battery()}% ---")
 
 
 def get_translation(processedImg, img):
@@ -42,7 +43,9 @@ def get_translation(processedImg, img):
     translation = 0
 
     ## Put predictions here
-    contours, hierarchy = cv.findContours(processedImg, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    contours, hierarchy = cv.findContours(
+        processedImg, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
+    )
     if len(contours) != 0:
         biggest = max(contours, key=cv.contourArea)
         x, y, w, h = cv.boundingRect(biggest)
@@ -50,18 +53,20 @@ def get_translation(processedImg, img):
         translation_y = y + h // 2
 
         cv.drawContours(img, biggest, -1, (0, 255, 0), 7)
-        cv.circle(img, (translation_x, translation_y), 10, (255, 0, 0), cv.FILLED)
-        cv.imshow('test',img)
-    
+        cv.circle(
+            img, (translation_x, translation_y), 10, (255, 0, 0), cv.FILLED
+        )
+        cv.imshow("test", img)
+
     return translation
 
-    
+
 def get_rotation(processedImg, sensors):
     """
     Args:
     processedImg --> Preprocesed image
     sensors --> how sensitive the drone will be in terms of rotation
-    
+
     Returns:
     rotation_vector of the drone
     """
@@ -71,11 +76,11 @@ def get_rotation(processedImg, sensors):
 
     for img in img_split:
         pixel_count = cv.countNonZero(img)
-        if pixel_count > THRESHOLD*total_pixels:
+        if pixel_count > THRESHOLD * total_pixels:
             rotation_vector.append(1)
         else:
             rotation_vector.append(0)
-    
+
     return rotation_vector
 
 
@@ -93,23 +98,32 @@ def send_commands(rotation_vector, translation_x):
 
     ## Translation
     left_right = (translation_x - FRAME_WIDTH // 2) // SENSITIVITY
-    left_right = int(np.clip(left_right, -10, 10)) # clip the speed
+    left_right = int(np.clip(left_right, -10, 10))  # clip the speed
 
-    if left_right < 2 and left_right > -2: 
+    if left_right < 2 and left_right > -2:
         left_right = 0
-    
 
     ## Rotation
-    if rotation_vector == [1, 0, 0]: curve = WEIGHTS[0]
-    elif rotation_vector == [1, 1, 0]: curve = WEIGHTS[1]
-    elif rotation_vector == [0, 1, 0]: curve = WEIGHTS[2]
-    elif rotation_vector == [0, 1, 1]: curve = WEIGHTS[3]
-    elif rotation_vector == [0, 0, 1]: curve = WEIGHTS[4]
+    if rotation_vector == [1, 0, 0]:
+        curve = WEIGHTS[0]
+    elif rotation_vector == [1, 1, 0]:
+        curve = WEIGHTS[1]
+    elif rotation_vector == [0, 1, 0]:
+        curve = WEIGHTS[2]
+    elif rotation_vector == [0, 1, 1]:
+        curve = WEIGHTS[3]
+    elif rotation_vector == [0, 0, 1]:
+        curve = WEIGHTS[4]
 
-    elif rotation_vector == [0, 0, 0]: curve = WEIGHTS[2]
-    elif rotation_vector == [1, 1, 1]: curve = WEIGHTS[2]
-    elif rotation_vector == [1, 0, 1]: curve = WEIGHTS[2]
+    elif rotation_vector == [0, 0, 0]:
+        curve = WEIGHTS[2]
+    elif rotation_vector == [1, 1, 1]:
+        curve = WEIGHTS[2]
+    elif rotation_vector == [1, 0, 1]:
+        curve = WEIGHTS[2]
 
+    print(left_right)
+    print(curve)
 
     # drone.send_rc_control(left_right, FORWARD_SPEED, 0, curve)
 
@@ -119,8 +133,9 @@ cap = cv.VideoCapture(0)
 while True:
     _, img = cap.read()
     img = cv.resize(img, (FRAME_WIDTH, FRAME_HEIGHT))
-    
+
     imgThres = thresholding(img)
+    print(imgThres.shape)
     translation_x = get_translation(imgThres, img)
     rotation_vector = get_rotation(imgThres, SENSITIVITY)
 

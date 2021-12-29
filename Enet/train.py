@@ -7,100 +7,105 @@ from tqdm import tqdm
 from imutils import paths
 from config import config
 from sklearn.model_selection import train_test_split
-from torchvision import transforms
 from model.ENet import ENet
+from config.utils import transforms
 
 
-image_paths = sorted(list(paths.list_images(config.IMAGE_DATATSET_PATH)))
-mask_paths = sorted(list(paths.list_images(config.MASK_DATASET_PATH)))
+def train_enet():
 
-split = train_test_split(
-    image_paths, mask_paths, test_size=config.TEST_SPLIT, random_state=42
-)
+    image_paths = sorted(list(paths.list_images(config.IMAGE_DATATSET_PATH)))
+    mask_paths = sorted(list(paths.list_images(config.MASK_DATASET_PATH)))
 
-(train_images, test_images) = split[:2]
-(train_masks, test_masks) = split[2:]
+    split = train_test_split(
+        image_paths, mask_paths, test_size=config.TEST_SPLIT, random_state=42
+    )
 
-transforms = transforms.Compose(
-    [
-        transforms.ToPILImage(),
-        transforms.Resize(
-            (config.INPUT_IMAGE_HEIGHT, config.INPUT_IMAGE_WIDTH)
-        ),
-        transforms.ToTensor(),
-    ]
-)
+    (train_images, test_images) = split[:2]
+    (train_masks, test_masks) = split[2:]
 
-train_ds = LaneDetectionDataset(
-    image_paths=train_images, mask_paths=train_masks, transforms=transforms
-)
-test_ds = LaneDetectionDataset(
-    image_paths=test_images, mask_paths=test_masks, transforms=transforms
-)
+    train_ds = LaneDetectionDataset(
+        image_paths=train_images, mask_paths=train_masks, transforms=transforms
+    )
+    test_ds = LaneDetectionDataset(
+        image_paths=test_images, mask_paths=test_masks, transforms=transforms
+    )
 
-print(f"[INFO] found {len(train_ds)} examples in the training set...")
-print(f"[INFO] found {len(test_ds)} examples in the test set...")
+    print(f"[INFO] found {len(train_ds)} images in the training set...")
+    print(f"[INFO] found {len(test_ds)} images in the val set...")
 
-train_loader = DataLoader(train_ds, shuffle=True, batch_size=config.BATCH_SIZE)
-test_loader = DataLoader(test_ds, shuffle=False, batch_size=config.BATCH_SIZE)
+    train_loader = DataLoader(
+        train_ds, shuffle=True, batch_size=config.BATCH_SIZE
+    )
+    test_loader = DataLoader(
+        test_ds, shuffle=False, batch_size=config.BATCH_SIZE
+    )
 
-enet = ENet(1)
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-enet = enet.to(device)
+    enet = ENet(1)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    enet = enet.to(device)
 
-loss_fn = BCEWithLogitsLoss()
-optimizer = Adam(enet.parameters(), lr=5e-4, weight_decay=2e-4)
+    loss_fn = BCEWithLogitsLoss()
+    optimizer = Adam(
+        enet.parameters(), lr=config.INIT_LR, weight_decay=config.WEIGHT_DECAY
+    )
 
-train_steps = len(train_ds) // config.BATCH_SIZE
-test_steps = len(test_ds) // config.BATCH_SIZE
-history = {"train_loss": [], "test_loss": []}
+    train_steps = len(train_ds) // config.BATCH_SIZE
+    test_steps = len(test_ds) // config.BATCH_SIZE
+    history = {"train_loss": [], "val_loss": []}
 
-# Training loop
-print("[INFO] training the network...")
+    # Training loop
+    print("[INFO] training using E-Net architecture...")
 
-for e in tqdm(range(config.NUM_EPOCHS)):
-    # set enet in training mode
-    enet.train()
+    for e in tqdm(range(config.NUM_EPOCHS)):
+        # set enet in training mode
+        enet.train()
 
-    total_train_loss = 0
-    total_test_loss = 0
+        total_train_loss = 0
+        total_test_loss = 0
 
-    for (i, (x, y)) in enumerate(train_loader):
-        (x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
-
-        pred = enet(x)
-        loss = loss_fn(pred, y)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        total_train_loss += loss
-
-    with torch.no_grad():
-        enet.eval()
-
-        for (x, y) in test_loader:
+        for (i, (x, y)) in enumerate(train_loader):
             (x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
+
             pred = enet(x)
-            total_test_loss += loss_fn(pred, y)
+            loss = loss_fn(pred, y)
 
-    avg_train_loss = total_train_loss / train_steps
-    avg_test_loss = total_test_loss / test_steps
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-    history["train_loss"].append(avg_train_loss.cpu().detach().numpy())
-    history["test_loss"].append(avg_test_loss.cpu().detach().numpy())
+            total_train_loss += loss
 
-    print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
-    print(
-        "Train loss: {:.6f}, Test loss: {:.6f}".format(
-            avg_train_loss, avg_test_loss
+        with torch.no_grad():
+            enet.eval()
+
+            for (x, y) in test_loader:
+                (x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
+                pred = enet(x)
+                total_test_loss += loss_fn(pred, y)
+
+        avg_train_loss = total_train_loss / train_steps
+        avg_test_loss = total_test_loss / test_steps
+
+        history["train_loss"].append(avg_train_loss.cpu().detach().numpy())
+        history["val_loss"].append(avg_test_loss.cpu().detach().numpy())
+
+        print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
+        print(
+            "Train loss: {:.6f}, Validation loss: {:.6f}".format(
+                avg_train_loss, avg_test_loss
+            )
         )
-    )
 
-    torch.save(
-        {"state_dict": enet.state_dict(), "optimizer": optimizer.state_dict()},
-        config.MODEL_PATH,
-    )
+        torch.save(
+            {
+                "state_dict": enet.state_dict(),
+                "optimizer": optimizer.state_dict(),
+            },
+            config.MODEL_PATH,
+        )
 
-    print("saved weights successfully!")
+        print("saved weights successfully!")
+
+
+if __name__ == "__main__":
+    train_enet()
