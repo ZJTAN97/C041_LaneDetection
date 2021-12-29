@@ -38,7 +38,7 @@ broken down into the following segments. The entire project is under constant up
 ## To add new Images to dataset.
 1. Use MATLAB Image segmenter
 
-![image](https://user-images.githubusercontent.com/68308477/147625963-d9e7cc6a-caf8-4428-a4f4-8f2bf610b522.png)
+![image](https://user-images.githubusercontent.com/68308477/147626064-0323e5a4-7cbe-443b-821d-b314de8efb13.png)
 
 2. Draw out the polygon, apply binary on the segmenter, export the masked Image
 
