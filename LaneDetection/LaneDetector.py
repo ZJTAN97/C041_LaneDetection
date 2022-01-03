@@ -122,9 +122,6 @@ def send_commands(rotation_vector, translation_x):
     elif rotation_vector == [1, 0, 1]:
         curve = WEIGHTS[2]
 
-    print(left_right)
-    print(curve)
-
     # drone.send_rc_control(left_right, FORWARD_SPEED, 0, curve)
 
 

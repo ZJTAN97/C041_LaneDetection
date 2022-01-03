@@ -4,19 +4,18 @@ import torch
 import cv2 as cv
 import os
 from djitellopy import tello
-
 import sys
+from pathlib import Path
+import keyboard
 
 myDir = os.getcwd()
 sys.path.append(myDir)
-from pathlib import Path
-
 path = Path(myDir)
 a = str(path.parent.absolute())
 sys.path.append(a)
 
 from Enet.model.ENet import ENet
-import time
+
 
 FRAME_WIDTH = 256
 FRAME_HEIGHT = 256
@@ -119,18 +118,6 @@ def send_commands(rotation_vector, translation_x):
     # drone.send_rc_control(left_right, FORWARD_SPEED, 0, curve)
 
 
-drone = tello.Tello()
-
-
-def drone_connect(drone):
-    """
-    To connect to Tello Drone via djitellopy API
-    """
-    drone.connect()
-    print("--- Drone Connected ---")
-    print(f"-- Drone Battery {drone.get_battery()}% ---")
-
-
 def main():
 
     model = ENet(1)
@@ -139,19 +126,23 @@ def main():
     )
     model.load_state_dict(checkpoint["state_dict"])
 
-    # cap = cv.VideoCapture(video_path)
+    print("[INFO] Model Loaded...")
+    print("Initializing Flight...")
+
     drone = tello.Tello()
     drone.connect()
-    print(drone.get_battery())
+    print("--- Drone Connected ---")
+    print(f"-- Drone Battery {drone.get_battery()}% ---")
     drone.streamon()
-    # drone.takeoff() # SAFETY
 
-    i = 0
+    # create the following flow
+    # 1. only start taking off (manually via keypress) when opencv starts
+    # 2. start sending commands only when took off, using a boolean variable
 
     while True:
 
         with torch.no_grad():
-            # success, frame = cap.read()
+
             frame = drone.get_frame_read().frame
             frame = cv.flip(
                 frame, 0
@@ -177,25 +168,25 @@ def main():
             translation_x = get_translation(pred, orig)
             rotation = get_rotation(pred, 3)
 
-            send_commands(rotation, translation_x)
+            # send_commands(rotation, translation_x)
 
             cv.imshow("output", orig)
-            cv.imshow("prediction", pred)
+            # cv.imshow("prediction", pred)
 
-            # if i == 10:
-            #     drone.takeoff()
+            if cv.waitKey(1) & 0xFF == ord("f"):
+                drone.takeoff()
+                print("[INFO] Drone taking off...")
 
-            # i += 1
-            # print(i)
-
-            # if 0xFF == ord("e"):
-            #     drone.land()
-            #     drone.end()
+            if keyboard.is_pressed("e"):
+                drone.land()
+                drone.emergency()
+                print("[INFO] Emergency Landing...")
 
             if cv.waitKey(1) & 0xFF == ord("q"):
+                drone.land()
+                print("[INFO] Emergency landing...")
                 break
 
 
-# path = "../dataset/test_videos/drone_footage.mp4"
-# main(path)
-main()
+if __name__ == "__main__":
+    main()
