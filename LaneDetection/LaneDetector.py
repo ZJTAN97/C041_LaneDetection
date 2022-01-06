@@ -1,140 +1,98 @@
-from djitellopy import tello
-import cv2 as cv
+from config import config
 import numpy as np
+import torch
+import cv2 as cv
+import os
+import sys
+from pathlib import Path
 
-FRAME_WIDTH = 480
-FRAME_HEIGHT = 360
+myDir = os.getcwd()
+sys.path.append(myDir)
+path = Path(myDir)
+a = str(path.parent.absolute())
+sys.path.append(a)
+
+from Enet.model.ENet import ENet
+
+## Re train in 255..
+## use 240 if u want test rotation
+
+FRAME_WIDTH = 256
+FRAME_HEIGHT = 256
 THRESHOLD = 0.2
 
 SENSITIVITY = 3
 WEIGHTS = [-25, -15, 0, 15, 15]
 FORWARD_SPEED = 15
 CURVE = 0
+sensors = 3
 
 
-# drone = tello.Tello()
+def get_rotation(predictions, sensors):
 
-hsvVals = [0, 0, 117, 179, 22, 219]
+    img = np.hsplit(predictions, sensors)  # split img into 3
 
-
-def thresholding(img):
-    hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
-    lower = np.array([hsvVals[0], hsvVals[1], hsvVals[2]])
-    upper = np.array([hsvVals[3], hsvVals[4], hsvVals[5]])
-    mask = cv.inRange(hsv, lower, upper)
-
-    return mask
+    for idx, im in enumerate(img):
+        cv.imshow(str(idx), im)
 
 
-def drone_connect(drone):
-    """
-    To connect to Tello Drone via djitellopy API
-    """
-    drone.connect()
-    print("--- Drone Connected ---")
-    print(f"-- Drone Battery {drone.get_battery()}% ---")
+def get_translation(predictions, img):
 
-
-def get_translation(processedImg, img):
-    """
-    To get the contours from the prediction of a trained model
-    Contours will handle the translation motion of the drone
-    """
-    translation = 0
-
-    ## Put predictions here
     contours, hierarchy = cv.findContours(
-        processedImg, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
+        predictions, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
     )
+
     if len(contours) != 0:
-        biggest = max(contours, key=cv.contourArea)
-        x, y, w, h = cv.boundingRect(biggest)
-        translation_x = x + w // 2
-        translation_y = y + h // 2
+        # biggest = max(contours, key=cv.contourArea)
+        # x, y, w, h = cv.boundingRect(biggest)
 
-        cv.drawContours(img, biggest, -1, (0, 255, 0), 7)
-        cv.circle(
-            img, (translation_x, translation_y), 10, (255, 0, 0), cv.FILLED
-        )
-        cv.imshow("test", img)
+        biggestContours = sorted(contours, key=cv.contourArea)[-2:]
 
-    return translation
+        x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])
+        x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])
 
+        # center of x and y
+        cx = x1 + x2 // 2
+        cy = y1 + y2 // 2
 
-def get_rotation(processedImg, sensors):
-    """
-    Args:
-    processedImg --> Preprocesed image
-    sensors --> how sensitive the drone will be in terms of rotation
+        cv.drawContours(img, biggestContours, -1, (0, 255, 0), 7)
+        cv.circle(img, (cx, cy), 10, (255, 0, 0), cv.FILLED)
 
-    Returns:
-    rotation_vector of the drone
-    """
-    img_split = np.hsplit(processedImg, sensors)
-    total_pixels = (processedImg.shape[1] // sensors) * processedImg.shape[0]
-    rotation_vector = []
-
-    for img in img_split:
-        pixel_count = cv.countNonZero(img)
-        if pixel_count > THRESHOLD * total_pixels:
-            rotation_vector.append(1)
-        else:
-            rotation_vector.append(0)
-
-    return rotation_vector
-
-
-def send_commands(rotation_vector, translation_x):
-    """
-    Send the commands to the drone based on the rotation and translation
-
-    Args:
-    rotation_vector
-    translation_x
-
-    """
-
-    global curve
-
-    ## Translation
-    left_right = (translation_x - FRAME_WIDTH // 2) // SENSITIVITY
-    left_right = int(np.clip(left_right, -10, 10))  # clip the speed
-
-    if left_right < 2 and left_right > -2:
-        left_right = 0
-
-    ## Rotation
-    if rotation_vector == [1, 0, 0]:
-        curve = WEIGHTS[0]
-    elif rotation_vector == [1, 1, 0]:
-        curve = WEIGHTS[1]
-    elif rotation_vector == [0, 1, 0]:
-        curve = WEIGHTS[2]
-    elif rotation_vector == [0, 1, 1]:
-        curve = WEIGHTS[3]
-    elif rotation_vector == [0, 0, 1]:
-        curve = WEIGHTS[4]
-
-    elif rotation_vector == [0, 0, 0]:
-        curve = WEIGHTS[2]
-    elif rotation_vector == [1, 1, 1]:
-        curve = WEIGHTS[2]
-    elif rotation_vector == [1, 0, 1]:
-        curve = WEIGHTS[2]
-
-    # drone.send_rc_control(left_right, FORWARD_SPEED, 0, curve)
+    return cx
 
 
 cap = cv.VideoCapture(0)
+model = ENet(1)
+checkpoint = torch.load(
+    config.PRE_TRAINED_WEIGHTS_PATH, map_location=torch.device("cpu")
+)
+model.load_state_dict(checkpoint["state_dict"])
+
 
 while True:
-    _, img = cap.read()
-    img = cv.resize(img, (FRAME_WIDTH, FRAME_HEIGHT))
+    _, frame = cap.read()
+    frame = cv.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT))
 
-    imgThres = thresholding(img)
-    print(imgThres.shape)
-    translation_x = get_translation(imgThres, img)
-    rotation_vector = get_rotation(imgThres, SENSITIVITY)
+    with torch.no_grad():
+        orig = frame.copy()
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        frame = frame.astype("float32") / 255.0
 
-    cv.imshow("Output", imgThres)
-    cv.waitKey(1)
+        frame = np.transpose(frame, (2, 0, 1))
+        frame = np.expand_dims(frame, 0)
+        frame = torch.from_numpy(frame).to(config.DEVICE)
+
+        pred = model(frame).squeeze()
+        pred = torch.sigmoid(pred)
+        pred = pred.cpu().numpy()
+
+        pred = (pred > config.THRESHOLD) * 255
+        pred = pred.astype(np.uint8)
+
+    translation_x = get_translation(pred, orig)
+    # rotation = get_rotation(pred, sensors=sensors)
+
+    cv.imshow("output", orig)
+
+    if cv.waitKey(1) & 0xFF == ord("q"):
+        break
