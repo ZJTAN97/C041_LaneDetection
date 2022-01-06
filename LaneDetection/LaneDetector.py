@@ -36,6 +36,9 @@ def get_rotation(predictions, sensors):
         cv.imshow(str(idx), im)
 
 
+sampleContours = np.array([[50, 50], [50, 150], [150, 150], [150, 50]])
+
+
 def get_translation(predictions, img):
 
     contours, hierarchy = cv.findContours(
@@ -48,14 +51,25 @@ def get_translation(predictions, img):
 
         biggestContours = sorted(contours, key=cv.contourArea)[-2:]
 
-        x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])
-        x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])
+        x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])  # right lane
+        x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])  # left lane
 
         # center of x and y
         cx = x1 + x2 // 2
         cy = y1 + y2 // 2
 
-        cv.drawContours(img, biggestContours, -1, (0, 255, 0), 7)
+        # top left, top right, bottom right, bottom left
+        testContour = np.array(
+            [
+                [x2, y2 - h2 // 2],
+                [x1, y1 - h1 // 2],
+                [x1, y1 + h1 // 2],
+                [x2, y2 + h2 // 2],
+            ]
+        )
+
+        # cv.fillPoly(img, [sampleContours], color=(0,255,0))
+        cv.drawContours(img, [testContour], -1, (0, 255, 0), 7)
         cv.circle(img, (cx, cy), 10, (255, 0, 0), cv.FILLED)
 
     return cx
