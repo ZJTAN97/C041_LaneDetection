@@ -46,33 +46,39 @@ def get_translation(predictions, img):
     )
 
     if len(contours) != 0:
-        # biggest = max(contours, key=cv.contourArea)
-        # x, y, w, h = cv.boundingRect(biggest)
 
         biggestContours = sorted(contours, key=cv.contourArea)[-2:]
-
         x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])  # right lane
         x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])  # left lane
 
         # center of x and y
-        cx = x1 + x2 // 2
+        cx = (x1 + x2) // 2
         cy = y1 + y2 // 2
 
         # top left, top right, bottom right, bottom left
-        testContour = np.array(
+        boundingRect = np.array(
             [
-                [x2, y2 - h2 // 2],
-                [x1, y1 - h1 // 2],
+                [x2, y2],
+                [x1, y1],
                 [x1, y1 + h1 // 2],
                 [x2, y2 + h2 // 2],
             ]
         )
 
-        # cv.fillPoly(img, [sampleContours], color=(0,255,0))
-        cv.drawContours(img, [testContour], -1, (0, 255, 0), 7)
-        cv.circle(img, (cx, cy), 10, (255, 0, 0), cv.FILLED)
+        cv.drawContours(img, [boundingRect], -1, (0, 255, 0), 2)
+        cv.circle(img, (cx, cy), 5, (255, 0, 0), cv.FILLED)
 
     return cx
+
+
+def send_commands(translation_x):
+
+    global curve
+
+    left_right = (translation_x - FRAME_WIDTH // 2) // SENSITIVITY
+    left_right = int(np.clip(left_right, -10, 10))
+
+    print(left_right)
 
 
 cap = cv.VideoCapture(0)
@@ -104,6 +110,7 @@ while True:
         pred = pred.astype(np.uint8)
 
     translation_x = get_translation(pred, orig)
+    send_commands(translation_x)
     # rotation = get_rotation(pred, sensors=sensors)
 
     cv.imshow("output", orig)

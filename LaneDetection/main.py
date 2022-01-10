@@ -62,22 +62,28 @@ def get_translation(predictions, img):
     )
 
     if len(contours) != 0:
-        # biggest = max(contours, key=cv.contourArea)
-        # x, y, w, h = cv.boundingRect(biggest)
 
-        biggestContours = sorted(contours, key=cv.contourArea)[-2:]
+        biggestContours = sorted(contours, key=cv.contourArea)[
+            -2:
+        ]  # this will get 2 lanes
+        x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])  # right lane
+        x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])  # left lane
 
-        if len(biggestContours) > 1:
+        # center of x and y
+        cx = (x1 + x2) // 2
+        cy = (h1) // 2
 
-            x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])
-            x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])
+        boundingRect = np.array(
+            [
+                [x2, y2],
+                [x1, y1],
+                [x1, y1 + h1],
+                [x2, y2 + h2],
+            ]
+        )
 
-            # center of x and y
-            cx = x1 + x2 // 2
-            cy = y1 + y2 // 2
-
-            cv.drawContours(img, biggestContours, -1, (0, 255, 0), 7)
-            cv.circle(img, (cx, cy), 10, (255, 0, 0), cv.FILLED)
+        cv.drawContours(img, [boundingRect], -1, (0, 255, 0), 2)
+        cv.circle(img, (cx, cy), 5, (255, 0, 0), cv.FILLED)
 
     return cx
 
@@ -99,9 +105,6 @@ def send_commands(rotation_vector, translation_x):
     left_right = int(np.clip(left_right, -10, 10))  # clip the speed
 
     print(left_right)
-
-    if left_right < 2 and left_right > -2:
-        left_right = 0
 
     ## Rotation
     if rotation_vector == [1, 0, 0]:
