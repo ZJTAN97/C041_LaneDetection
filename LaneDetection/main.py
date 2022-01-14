@@ -27,30 +27,6 @@ FORWARD_SPEED = 15
 CURVE = 0
 
 
-def get_rotation(img, sensors):
-    """
-    Args:
-    processedImg --> Preprocesed image
-    sensors --> how sensitive the drone will be in terms of rotation
-
-    Returns:
-    rotation_vector of the drone
-    """
-
-    img_split = np.hsplit(img, 2)
-    total_pixels = (img.shape[1] // sensors) * img.shape[0]
-    rotation_vector = []
-
-    for img in img_split:
-        pixel_count = cv.countNonZero(img)
-        if pixel_count > THRESHOLD * total_pixels:
-            rotation_vector.append(1)
-        else:
-            rotation_vector.append(0)
-
-    return rotation_vector
-
-
 def get_translation(predictions, img):
     """
     To get the contours from the prediction of a trained model
@@ -88,7 +64,7 @@ def get_translation(predictions, img):
     return cx
 
 
-def send_commands(rotation_vector, translation_x):
+def send_commands(translation_x, drone):
     """
     Send the commands to the drone based on the rotation and translation
 
@@ -97,35 +73,11 @@ def send_commands(rotation_vector, translation_x):
     translation_x
 
     """
-
-    global curve
-
     ## Translation
     left_right = (translation_x - FRAME_WIDTH // 2) // SENSITIVITY
     left_right = int(np.clip(left_right, -10, 10))  # clip the speed
 
-    print(left_right)
-
-    ## Rotation
-    if rotation_vector == [1, 0, 0]:
-        curve = WEIGHTS[0]
-    elif rotation_vector == [1, 1, 0]:
-        curve = WEIGHTS[1]
-    elif rotation_vector == [0, 1, 0]:
-        curve = WEIGHTS[2]
-    elif rotation_vector == [0, 1, 1]:
-        curve = WEIGHTS[3]
-    elif rotation_vector == [0, 0, 1]:
-        curve = WEIGHTS[4]
-
-    elif rotation_vector == [0, 0, 0]:
-        curve = WEIGHTS[2]
-    elif rotation_vector == [1, 1, 1]:
-        curve = WEIGHTS[2]
-    elif rotation_vector == [1, 0, 1]:
-        curve = WEIGHTS[2]
-
-    # drone.send_rc_control(left_right, FORWARD_SPEED, 0, curve)
+    drone.send_rc_control(left_right, FORWARD_SPEED, 0, 0)
 
 
 def main():
@@ -143,27 +95,18 @@ def main():
     drone.connect()
     print("--- Drone Connected ---")
     print(f"-- Drone Battery {drone.get_battery()}% ---")
+    drone.streamoff()  # clear any existing streams
     drone.streamon()
 
     while True:
 
-        # if keyboard.is_pressed("f"):
-        #     print('taking off...')
-        #     drone.takeoff()
+        if keyboard.is_pressed("f"):
+            print("taking off...")
+            drone.takeoff()
 
         if keyboard.is_pressed("e"):
             drone.land()
             print("[INFO] Emergency Landing...")
-
-        # manual override
-        if keyboard.is_pressed("w"):
-            drone.send_rc_control(0, 60, 0, 0)
-        if keyboard.is_pressed("s"):
-            drone.send_rc_control(0, -60, 0, 0)
-        if keyboard.is_pressed("a"):
-            drone.send_rc_control(-60, 0, 0, 0)
-        if keyboard.is_pressed("d"):
-            drone.send_rc_control(60, 0, 0, 0)
 
         with torch.no_grad():
 
@@ -192,13 +135,15 @@ def main():
             translation_x = get_translation(pred, orig)
             # rotation = get_rotation(pred, 3)
 
-            send_commands([0, 0, 0], translation_x)
+            send_commands(translation_x, drone)
 
             cv.imshow("output", orig)
             # cv.imshow("prediction", pred)
 
             if cv.waitKey(1) & 0xFF == ord("q"):
                 break
+
+    drone.land()
 
 
 if __name__ == "__main__":
