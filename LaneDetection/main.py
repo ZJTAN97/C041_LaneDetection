@@ -64,7 +64,26 @@ def get_translation(predictions, img):
     return cx
 
 
-def send_commands(translation_x, drone):
+def get_rotation(prediction):
+
+    split_img = np.hsplit(prediction, 3)
+    total_pixels = (prediction.shape[1] // 3) * prediction.shape[0]
+    rotation_coordinates = []
+
+    for (
+        i,
+        img,
+    ) in enumerate(split_img):
+        pixel_count = cv.countNonZero(img)
+        if pixel_count > THRESHOLD * total_pixels:
+            rotation_coordinates.append(1)
+        else:
+            rotation_coordinates.append(0)
+
+    return rotation_coordinates
+
+
+def send_commands(translation, rotation, drone):
     """
     Send the commands to the drone based on the rotation and translation
 
@@ -74,10 +93,21 @@ def send_commands(translation_x, drone):
 
     """
     ## Translation
-    left_right = (translation_x - FRAME_WIDTH // 2) // SENSITIVITY
+    left_right = (translation - FRAME_WIDTH // 2) // SENSITIVITY
     left_right = int(np.clip(left_right, -10, 10))  # clip the speed
 
-    drone.send_rc_control(left_right, FORWARD_SPEED, 0, 0)
+    if rotation == [1, 0, 0]:
+        rotate = -25
+    elif rotation == [1, 1, 0]:
+        rotate = -10
+    elif rotation == [0, 1, 1]:
+        rotate = 10
+    elif rotation == [0, 0, 1]:
+        rotate = 25
+    else:
+        rotate = 0
+
+    drone.send_rc_control(left_right, FORWARD_SPEED, 0, rotate)
 
 
 def main():
@@ -133,9 +163,9 @@ def main():
             pred = pred.astype(np.uint8)
 
             translation_x = get_translation(pred, orig)
-            # rotation = get_rotation(pred, 3)
+            rotation = get_rotation(pred)
 
-            send_commands(translation_x, drone)
+            send_commands(translation_x, rotation, drone)
 
             cv.imshow("output", orig)
             # cv.imshow("prediction", pred)

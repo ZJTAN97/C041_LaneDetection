@@ -27,7 +27,7 @@ INPUT_IMAGE_WIDTH = 256
 # initialize learning rate, number of epochs to train for, and the
 # batch size
 INIT_LR = 0.003
-NUM_EPOCHS = 10
+NUM_EPOCHS = 5
 BATCH_SIZE = 1
 
 
@@ -39,7 +39,9 @@ BASE_OUTPUT = "output"
 
 # define the path to the output serialized model, model training
 # plot, and testing image paths
-PRE_TRAINED_WEIGHTS_PATH = os.path.join(BASE_OUTPUT, "unet_weights_200epoch.pth.tar")
-MODEL_PATH = os.path.join(BASE_OUTPUT, "unet_weights.pth.tar")
+PRE_TRAINED_WEIGHTS_PATH = os.path.join(
+    BASE_OUTPUT, "unet_weights_200epoch.pth.tar"
+)
+MODEL_PATH = os.path.join(BASE_OUTPUT, "sample.pth.tar")
 PLOT_PATH = os.path.sep.join([BASE_OUTPUT, "plot.png"])
 TEST_PATHS = os.path.sep.join([BASE_OUTPUT, "test_paths.txt"])
