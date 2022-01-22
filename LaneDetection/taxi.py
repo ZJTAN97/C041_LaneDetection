@@ -34,7 +34,7 @@ def get_translation(predictions, img):
     """
     cx = 0
     contours, hierarchy = cv.findContours(
-        predictions, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE
+        predictions, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
     )
 
     if len(contours) != 0:
@@ -42,13 +42,14 @@ def get_translation(predictions, img):
         biggestContours = sorted(contours, key=cv.contourArea)[
             -2:
         ]  # this will get 2 lanes
-        x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])  # right lane
-        x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])  # left lane
+        x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])
+        x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])
 
         # center of x and y
         cx = (x1 + x2) // 2
-        cy = (h1) // 2
+        cy = h1
 
+        # top top, bottom bottom
         boundingRect = np.array(
             [
                 [x2, y2],
@@ -58,32 +59,25 @@ def get_translation(predictions, img):
             ]
         )
 
+        # Rotation
+        if cy < y1 or cy < y2:
+            # need to find a way to determine rotate clockwise or anticlockwise
+            if x1 < x2 and h1 < h2:
+                print("rotate anticlockwise")
+            elif x1 < x2 and h2 < h1:
+                print("rotate anticlockwise")
+            elif x1 > x2 and h1 < h2:
+                print("rotate clockwise")
+            elif x1 > x2 and h2 < h1:
+                print("rotate clockwise")
+
         cv.drawContours(img, [boundingRect], -1, (0, 255, 0), 2)
         cv.circle(img, (cx, cy), 5, (255, 0, 0), cv.FILLED)
 
     return cx
 
 
-def get_rotation(prediction):
-
-    split_img = np.hsplit(prediction, 3)
-    total_pixels = (prediction.shape[1] // 3) * prediction.shape[0]
-    rotation_coordinates = []
-
-    for (
-        i,
-        img,
-    ) in enumerate(split_img):
-        pixel_count = cv.countNonZero(img)
-        if pixel_count > THRESHOLD * total_pixels:
-            rotation_coordinates.append(1)
-        else:
-            rotation_coordinates.append(0)
-
-    return rotation_coordinates
-
-
-def send_commands(translation, rotation, drone):
+def send_commands(translation, drone):
     """
     Send the commands to the drone based on the rotation and translation
 
@@ -96,18 +90,7 @@ def send_commands(translation, rotation, drone):
     left_right = (translation - FRAME_WIDTH // 2) // SENSITIVITY
     left_right = int(np.clip(left_right, -10, 10))  # clip the speed
 
-    if rotation == [1, 0, 0]:
-        rotate = -25
-    elif rotation == [1, 1, 0]:
-        rotate = -10
-    elif rotation == [0, 1, 1]:
-        rotate = 10
-    elif rotation == [0, 0, 1]:
-        rotate = 25
-    else:
-        rotate = 0
-
-    drone.send_rc_control(left_right, FORWARD_SPEED, 0, rotate)
+    drone.send_rc_control(left_right, FORWARD_SPEED, 0, 0)
 
 
 def main():
@@ -163,9 +146,8 @@ def main():
             pred = pred.astype(np.uint8)
 
             translation_x = get_translation(pred, orig)
-            rotation = get_rotation(pred)
 
-            send_commands(translation_x, rotation, drone)
+            send_commands(translation_x, drone)
 
             cv.imshow("output", orig)
             # cv.imshow("prediction", pred)
