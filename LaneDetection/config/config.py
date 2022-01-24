@@ -22,8 +22,8 @@ NUM_CHANNELS = 1
 NUM_CLASSES = 1
 NUM_LEVELS = 3
 
-INPUT_IMAGE_HEIGHT = 256
-INPUT_IMAGE_WIDTH = 256
+INPUT_IMAGE_HEIGHT = 240
+INPUT_IMAGE_WIDTH = 240
 
 # initialize learning rate, number of epochs to train for, and the
 # batch size
