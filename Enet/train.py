@@ -9,6 +9,8 @@ from config import config
 from sklearn.model_selection import train_test_split
 from model.ENet import ENet
 from config.utils import transforms
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def train_enet():
@@ -31,7 +33,7 @@ def train_enet():
     )
 
     print(f"[INFO] found {len(train_ds)} images in the training set...")
-    print(f"[INFO] found {len(test_ds)} images in the val set...")
+    print(f"[INFO] found {len(test_ds)} images in the validation set...")
 
     train_loader = DataLoader(
         train_ds, shuffle=True, batch_size=config.BATCH_SIZE
@@ -105,6 +107,15 @@ def train_enet():
         )
 
         print("saved weights successfully!")
+        plt.style.use("ggplot")
+        plt.figure()
+        plt.plot(history["train_loss"], label="train_loss")
+        plt.plot(history["val_loss"], label="val_loss")
+        plt.title("Training loss")
+        plt.xlabel("Epoch #")
+        plt.ylabel("Loss")
+        plt.legend(loc="lower left")
+        plt.savefig(config.PLOT_PATH)
 
 
 if __name__ == "__main__":

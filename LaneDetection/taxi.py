@@ -68,9 +68,9 @@ def get_motion(predictions, img):
                 pixel_count = cv.countNonZero(img)
                 if pixel_count > 0.010 * total_pixels:
                     if i == 2:
-                        rotation = 30
+                        rotation = 60
                     elif i == 0:
-                        rotation = -30
+                        rotation = -60
                     else:
                         rotation = 0
 
@@ -91,7 +91,7 @@ def send_commands(translation, rotation, drone):
     left_right = int(np.clip(left_right, -10, 10))  # clip the speed
 
     if rotation > 0:
-        FORWARD_SPEED = -20
+        FORWARD_SPEED = -10
     else:
         FORWARD_SPEED = 10
 
@@ -121,6 +121,7 @@ def main():
         if keyboard.is_pressed("f"):
             print("taking off...")
             drone.takeoff()
+            drone.move_up(120)
 
         if keyboard.is_pressed("e"):
             drone.land()

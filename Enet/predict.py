@@ -105,5 +105,5 @@ def make_predictions_video(video_path):
                 break
 
 
-# path = "../dataset/test_videos/test_video_2.mp4"
-# make_predictions_video(path)
+path = "../dataset/test_videos/test_video_2.mp4"
+make_predictions_video(path)

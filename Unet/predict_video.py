@@ -47,4 +47,5 @@ def make_predictions_video(video_path):
 
 
 path = "../dataset/test_videos/test_video_1fps.mp4"
-make_predictions_video(path)
+path2 = "../dataset/test_videos/drone_footage.mp4"
+make_predictions_video(path2)

@@ -49,7 +49,7 @@ test_ds = LaneDetectionDataset(
 )
 
 print(f"[INFO] found {len(train_ds)} examples in the training set...")
-print(f"[INFO] found {len(test_ds)} examples in the test set...")
+print(f"[INFO] found {len(test_ds)} examples in the validation set...")
 
 train_loader = DataLoader(train_ds, shuffle=True, batch_size=config.BATCH_SIZE)
 test_loader = DataLoader(test_ds, shuffle=False, batch_size=config.BATCH_SIZE)
@@ -118,21 +118,19 @@ for e in tqdm(range(config.NUM_EPOCHS)):
     )
     print("saved weights successfully!")
 
+    plt.style.use("ggplot")
+    plt.figure()
+    plt.plot(history["train_loss"], label="train_loss")
+    plt.plot(history["test_loss"], label="test_loss")
+    plt.title("Training loss")
+    plt.xlabel("Epoch #")
+    plt.ylabel("Loss")
+    plt.legend(loc="lower left")
+    plt.savefig(config.PLOT_PATH)
+
 end_time = time.time()
 print(
     "[INFO] total time taken to trian the model: {:.2f}s".format(
         end_time - start_time
     )
 )
-
-
-plt.style.use("ggplot")
-plt.figure()
-plt.plot(history["train_loss"], label="train_loss")
-plt.plot(history["test_loss"], label="test_loss")
-plt.title("Training loss")
-plt.xlabel("Epoch #")
-plt.ylabel("Loss")
-plt.legend(loc="lower left")
-plt.show()
-plt.savefig(config.PLOT_PATH)
