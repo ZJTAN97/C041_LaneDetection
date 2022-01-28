@@ -6,6 +6,41 @@ import cv2 as cv
 import os
 
 
+def form_rectangle(predictions, img):
+    """
+    To get the contours from the prediction of a trained model
+    Contours will handle the translation motion of the drone
+    """
+    contours, hierarchy = cv.findContours(
+        predictions, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
+    )
+
+    if len(contours) != 0:
+
+        biggestContours = sorted(contours, key=cv.contourArea)[
+            -2:
+        ]  # this will get 2 lanes
+        x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])
+        x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])
+
+        # center of x and y
+        cx = (x1 + x2) // 2
+        cy = h1
+
+        # top top, bottom bottom
+        boundingRect = np.array(
+            [
+                [x2, y2],
+                [x1, y1],
+                [x1, y1 + h1],
+                [x2, y2 + h2],
+            ]
+        )
+
+        cv.drawContours(img, [boundingRect], -1, (0, 255, 0), 2)
+        cv.circle(img, (cx, cy), 5, (255, 0, 0), cv.FILLED)
+
+
 def make_predictions(image_path):
 
     model = ENet(1)
@@ -52,16 +87,45 @@ def make_predictions(image_path):
             (original, ground_truth_mask_colored, pred_mask_colored), axis=1
         )
 
-        cv.imshow("pred_mask", stacked)
+        contours, hierarchy = cv.findContours(
+            pred_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
+        )
+
+        if len(contours) != 0:
+
+            biggestContours = sorted(contours, key=cv.contourArea)[
+                -2:
+            ]  # this will get 2 lanes
+            x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])
+            x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])
+
+            # center of x and y
+            cx = (x1 + x2) // 2
+            cy = h1
+
+            # top top, bottom bottom
+            boundingRect = np.array(
+                [
+                    [x2, y2],
+                    [x1, y1],
+                    [x1, y1 + h1],
+                    [x2, y2 + h2],
+                ]
+            )
+
+            cv.drawContours(original, [boundingRect], -1, (0, 255, 0), 2)
+            cv.circle(original, (cx, cy), 5, (255, 0, 0), cv.FILLED)
+
+        cv.imshow("pred_mask", original)
         cv.waitKey(0)
 
 
-# print("[INFO] loading up test image paths....")
-# image_paths = open(config.TEST_PATHS).read().strip().split("\n")
-# image_paths = np.random.choice(image_paths, size=10)
+print("[INFO] loading up test image paths....")
+image_paths = open(config.TEST_PATHS).read().strip().split("\n")
+image_paths = np.random.choice(image_paths, size=10)
 
-# for path in image_paths:
-#     make_predictions(path)
+for path in image_paths:
+    make_predictions(path)
 
 
 def make_predictions_video(video_path):
@@ -105,5 +169,5 @@ def make_predictions_video(video_path):
                 break
 
 
-path = "../dataset/test_videos/test_video_2.mp4"
-make_predictions_video(path)
+# path = "../dataset/test_videos/test_video_2.mp4"
+# make_predictions_video(path)

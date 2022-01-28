@@ -17,13 +17,6 @@ sys.path.append(a)
 from Enet.model.ENet import ENet
 
 
-THRESHOLD = 0.2
-SENSITIVITY = 3
-WEIGHTS = [-25, -15, 0, 15, 15]
-FORWARD_SPEED = 5
-CURVE = 0
-
-
 def get_motion(predictions, img):
     """
     To get the contours from the prediction of a trained model
@@ -66,14 +59,13 @@ def get_motion(predictions, img):
             total_pixels = (predictions.shape[1] // 3) * predictions.shape[0]
             for i, img in enumerate(prediction_split):
                 pixel_count = cv.countNonZero(img)
-                # 0.010
-                if pixel_count > 0.0001 * total_pixels:
+                if pixel_count > 0.010 * total_pixels:
                     if i == 2:
-                        rotation = 45
+                        rotation = 60
                     elif i == 0:
-                        rotation = -45
+                        rotation = -60
                     else:
-                        rotation = -10
+                        rotation = 0
 
     return cx, rotation
 
@@ -92,7 +84,7 @@ def send_commands(translation, rotation, drone):
     left_right = int(np.clip(left_right, -10, 10))  # clip the speed
 
     if rotation > 0:
-        FORWARD_SPEED = 0
+        FORWARD_SPEED = -10
     else:
         FORWARD_SPEED = 10
 
@@ -122,6 +114,7 @@ def main():
         if keyboard.is_pressed("f"):
             print("taking off...")
             drone.takeoff()
+            drone.move_up(120)
 
         if keyboard.is_pressed("e"):
             drone.land()
@@ -155,8 +148,8 @@ def main():
 
             send_commands(translation, rotation, drone)
 
-            # cv.imshow("output", orig)
-            cv.imshow("prediction", pred)
+            cv.imshow("output", orig)
+            # cv.imshow("prediction", pred)
 
             if cv.waitKey(1) & 0xFF == ord("q"):
                 break
