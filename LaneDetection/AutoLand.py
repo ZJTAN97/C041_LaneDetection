@@ -16,12 +16,8 @@ sys.path.append(a)
 
 from Enet.model.ENet import ENet
 
-
-THRESHOLD = 0.2
-SENSITIVITY = 3
-WEIGHTS = [-25, -15, 0, 15, 15]
+SENSITIVITY = 2
 FORWARD_SPEED = 5
-CURVE = 0
 
 
 def get_motion(predictions, img):
@@ -30,7 +26,7 @@ def get_motion(predictions, img):
     Contours will handle the translation motion of the drone
     """
     cx = 0
-    rotation = 0
+    land = False
     contours, hierarchy = cv.findContours(
         predictions, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
     )
@@ -60,25 +56,15 @@ def get_motion(predictions, img):
         cv.drawContours(img, [boundingRect], -1, (0, 255, 0), 2)
         cv.circle(img, (cx, cy), 5, (255, 0, 0), cv.FILLED)
 
-        # Rotation
-        if cy < y1 or cy < y2:
-            prediction_split = np.hsplit(predictions, 3)
-            total_pixels = (predictions.shape[1] // 3) * predictions.shape[0]
-            for i, img in enumerate(prediction_split):
-                pixel_count = cv.countNonZero(img)
-                # 0.010
-                if pixel_count > 0.0001 * total_pixels:
-                    if i == 2:
-                        rotation = 45
-                    elif i == 0:
-                        rotation = -45
-                    else:
-                        rotation = -10
+        if cy < (y1 * 190) and cy < (y2 * 190):
+            land = True
+        else:
+            land = False
 
-    return cx, rotation
+    return cx, land
 
 
-def send_commands(translation, rotation, drone):
+def send_commands(translation, land, drone):
     """
     Send the commands to the drone based on the rotation and translation
 
@@ -91,12 +77,10 @@ def send_commands(translation, rotation, drone):
     left_right = (translation - config.INPUT_IMAGE_WIDTH // 2) // SENSITIVITY
     left_right = int(np.clip(left_right, -10, 10))  # clip the speed
 
-    if rotation > 0:
-        FORWARD_SPEED = 0
-    else:
-        FORWARD_SPEED = 10
+    drone.send_rc_control(left_right, FORWARD_SPEED, 0, 0)
 
-    drone.send_rc_control(left_right, FORWARD_SPEED, 0, rotation)
+    if land:
+        drone.land()
 
 
 def main():
@@ -123,10 +107,6 @@ def main():
             print("taking off...")
             drone.takeoff()
 
-        if keyboard.is_pressed("e"):
-            drone.land()
-            print("[INFO] Emergency Landing...")
-
         with torch.no_grad():
 
             frame = drone.get_frame_read().frame
@@ -151,9 +131,9 @@ def main():
             pred = (pred > config.THRESHOLD) * 255
             pred = pred.astype(np.uint8)
 
-            translation, rotation = get_motion(pred, orig)
+            translation, land = get_motion(pred, orig)
 
-            send_commands(translation, rotation, drone)
+            send_commands(translation, land, drone)
 
             cv.imshow("output", orig)
             # cv.imshow("prediction", pred)
