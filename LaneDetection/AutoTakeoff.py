@@ -17,78 +17,33 @@ sys.path.append(a)
 from Enet.model.ENet import ENet
 
 
-def get_motion(predictions, img):
+def auto_takeoff(predictions, img, drone):
     """
     To get the contours from the prediction of a trained model
     Contours will handle the translation motion of the drone
     """
     cx = 0
-    rotation = 0
     contours, hierarchy = cv.findContours(
         predictions, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
     )
 
     if len(contours) != 0:
 
-        biggestContours = sorted(contours, key=cv.contourArea)[
-            -2:
-        ]  # this will get 2 lanes
-        x1, y1, w1, h1 = cv.boundingRect(biggestContours[0])
-        x2, y2, w2, h2 = cv.boundingRect(biggestContours[1])
+        biggestContours = sorted(contours, key=cv.contourArea)[-2:]
 
-        # center of x and y
-        cx = (x1 + x2) // 2
-        cy = h1
+        for c in biggestContours:
+            M = cv.moments(c)
+            cX = int(M["m10"] / (M["m00"] if M["m00"] != 0 else 1))
+            cY = int(M["m01"] / (M["m00"] if M["m00"] != 0 else 1))
+            cv.circle(img, (cX, cY), 5, (0, 0, 255), -1)
 
-        # top top, bottom bottom
-        boundingRect = np.array(
-            [
-                [x2, y2],
-                [x1, y1],
-                [x1, y1 + h1],
-                [x2, y2 + h2],
-            ]
-        )
+            if cY > 210:
+                drone.takeoff()
 
-        cv.drawContours(img, [boundingRect], -1, (0, 255, 0), 2)
-        cv.circle(img, (cx, cy), 5, (255, 0, 0), cv.FILLED)
+        cv.fillPoly(img, contours, color=(0, 255, 0))
 
-        # Rotation
-        if cy < y1 or cy < y2:
-            prediction_split = np.hsplit(predictions, 3)
-            total_pixels = (predictions.shape[1] // 3) * predictions.shape[0]
-            for i, img in enumerate(prediction_split):
-                pixel_count = cv.countNonZero(img)
-                if pixel_count > 0.010 * total_pixels:
-                    if i == 2:
-                        rotation = 60
-                    elif i == 0:
-                        rotation = -60
-                    else:
-                        rotation = 0
-
-    return cx, rotation
-
-
-def send_commands(translation, rotation, drone):
-    """
-    Send the commands to the drone based on the rotation and translation
-
-    Args:
-    rotation_vector
-    translation_x
-
-    """
-    ## Translation
-    left_right = (translation - config.INPUT_IMAGE_WIDTH // 2) // SENSITIVITY
-    left_right = int(np.clip(left_right, -10, 10))  # clip the speed
-
-    if rotation > 0:
-        FORWARD_SPEED = -10
-    else:
-        FORWARD_SPEED = 10
-
-    drone.send_rc_control(left_right, FORWARD_SPEED, 0, rotation)
+        # cv.polylines(img, biggestContours, True, (0,255,0), 2)
+        # cv.fillPoly(img, contours, color=(0,255,0))
 
 
 def main():
@@ -109,23 +64,15 @@ def main():
     drone.streamoff()  # clear any existing streams
     drone.streamon()
 
+    # cap = cv.VideoCapture("../dataset/test_videos/takeoff.mp4")
+
     while True:
-
-        if keyboard.is_pressed("f"):
-            print("taking off...")
-            drone.takeoff()
-            drone.move_up(120)
-
-        if keyboard.is_pressed("e"):
-            drone.land()
-            print("[INFO] Emergency Landing...")
 
         with torch.no_grad():
 
+            # success, frame = cap.read()
+
             frame = drone.get_frame_read().frame
-            frame = cv.flip(
-                frame, 0
-            )  # uncomment when using drone / drone's footages
             frame = cv.resize(
                 frame, (config.INPUT_IMAGE_WIDTH, config.INPUT_IMAGE_HEIGHT)
             )
@@ -144,9 +91,7 @@ def main():
             pred = (pred > config.THRESHOLD) * 255
             pred = pred.astype(np.uint8)
 
-            translation, rotation = get_motion(pred, orig)
-
-            send_commands(translation, rotation, drone)
+            auto_takeoff(pred, orig, drone)
 
             cv.imshow("output", orig)
             # cv.imshow("prediction", pred)

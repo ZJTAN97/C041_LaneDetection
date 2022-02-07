@@ -120,12 +120,12 @@ def make_predictions(image_path):
         cv.waitKey(0)
 
 
-print("[INFO] loading up test image paths....")
-image_paths = open(config.TEST_PATHS).read().strip().split("\n")
-image_paths = np.random.choice(image_paths, size=10)
+# print("[INFO] loading up test image paths....")
+# image_paths = open(config.TEST_PATHS).read().strip().split("\n")
+# image_paths = np.random.choice(image_paths, size=10)
 
-for path in image_paths:
-    make_predictions(path)
+# for path in image_paths:
+#     make_predictions(path)
 
 
 def make_predictions_video(video_path):
@@ -169,5 +169,5 @@ def make_predictions_video(video_path):
                 break
 
 
-# path = "../dataset/test_videos/test_video_2.mp4"
-# make_predictions_video(path)
+path = "../dataset/test_videos/takeoff.mp4"
+make_predictions_video(path)
