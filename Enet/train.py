@@ -8,9 +8,29 @@ from imutils import paths
 from config import config
 from sklearn.model_selection import train_test_split
 from model.ENet import ENet
-from config.utils import transforms
+from config.utils import (
+    transforms,
+    count_parameters,
+    LRScheduler,
+    EarlyStopping,
+)
 import matplotlib.pyplot as plt
 import numpy as np
+from prettytable import PrettyTable
+
+
+def count_parameters(model):
+    table = PrettyTable(["Modules", "Parameters"])
+    total_params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad:
+            continue
+        params = parameter.numel()
+        table.add_row([name, params])
+        total_params += params
+    print(table)
+    print(f"Total Trainable Params: {total_params}")
+    return total_params
 
 
 def train_enet():
@@ -43,6 +63,11 @@ def train_enet():
     )
 
     enet = ENet(1)
+    count_parameters(enet)
+    pytorch_total_params = sum(
+        p.numel() for p in enet.parameters() if p.requires_grad
+    )
+    print("num of parammeters: ", pytorch_total_params)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     enet = enet.to(device)
 
@@ -54,6 +79,9 @@ def train_enet():
     train_steps = len(train_ds) // config.BATCH_SIZE
     test_steps = len(test_ds) // config.BATCH_SIZE
     history = {"train_loss": [], "val_loss": []}
+
+    lr_scheduler = LRScheduler(optimizer)
+    early_stopping = EarlyStopping()
 
     # Training loop
     print("[INFO] training using E-Net architecture...")
@@ -90,6 +118,11 @@ def train_enet():
 
         history["train_loss"].append(avg_train_loss.cpu().detach().numpy())
         history["val_loss"].append(avg_test_loss.cpu().detach().numpy())
+
+        lr_scheduler(avg_test_loss)
+        early_stopping(avg_test_loss)
+        if early_stopping.early_stop:
+            break
 
         print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
         print(

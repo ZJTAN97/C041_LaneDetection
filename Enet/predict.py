@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import cv2 as cv
 import os
+import time
 
 
 def form_rectangle(predictions, img):
@@ -116,16 +117,16 @@ def make_predictions(image_path):
             cv.drawContours(original, [boundingRect], -1, (0, 255, 0), 2)
             cv.circle(original, (cx, cy), 5, (255, 0, 0), cv.FILLED)
 
-        cv.imshow("pred_mask", original)
+        cv.imshow("pred_mask", stacked)
         cv.waitKey(0)
 
 
-# print("[INFO] loading up test image paths....")
-# image_paths = open(config.TEST_PATHS).read().strip().split("\n")
-# image_paths = np.random.choice(image_paths, size=10)
+print("[INFO] loading up test image paths....")
+image_paths = open(config.TEST_PATHS).read().strip().split("\n")
+image_paths = np.random.choice(image_paths, size=10)
 
-# for path in image_paths:
-#     make_predictions(path)
+for path in image_paths:
+    make_predictions(path)
 
 
 def make_predictions_video(video_path):
@@ -141,6 +142,8 @@ def make_predictions_video(video_path):
     while True:
 
         with torch.no_grad():
+
+            start_time = time.time()
             success, frame = cap.read()
             frame = cv.resize(
                 frame, (config.INPUT_IMAGE_WIDTH, config.INPUT_IMAGE_HEIGHT)
@@ -163,11 +166,18 @@ def make_predictions_video(video_path):
             pred_colored = cv.cvtColor(pred, cv.COLOR_GRAY2RGB)
             stacked = np.concatenate((orig, pred_colored), axis=1)
 
+            end_time = time.time()
+            print(
+                "Time taken for frame prediction: {:.2f}s".format(
+                    end_time - start_time
+                )
+            )
+
             cv.imshow("Comparison", stacked)
 
             if cv.waitKey(1) & 0xFF == ord("q"):
                 break
 
 
-path = "../dataset/test_videos/takeoff.mp4"
-make_predictions_video(path)
+# path = "../dataset/test_videos/test_video_2.mp4"
+# make_predictions_video(path)
