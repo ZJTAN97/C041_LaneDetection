@@ -1,6 +1,11 @@
+from config.utils import (
+    count_parameters,
+    LRScheduler,
+    EarlyStopping,
+    DiceBCELoss,
+)
 from config.dataset import LaneDetectionDataset
 from config.model import UNet
-from config.dice_loss import DiceBCELoss
 from config import config
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
@@ -57,7 +62,8 @@ test_loader = DataLoader(test_ds, shuffle=False, batch_size=config.BATCH_SIZE)
 
 # Initialize UNet Model
 unet = UNet().to(config.DEVICE)
-loss_fn = BCEWithLogitsLoss()  # implement diceloss later
+count_parameters(unet)
+loss_fn = BCEWithLogitsLoss()
 dice_loss_fn = DiceBCELoss()
 optimizer = Adam(unet.parameters(), lr=config.INIT_LR)
 
@@ -65,6 +71,8 @@ train_steps = len(train_ds) // config.BATCH_SIZE
 test_steps = len(test_ds) // config.BATCH_SIZE
 history = {"train_loss": [], "test_loss": []}
 
+lr_scheduler = LRScheduler(optimizer)
+early_stopping = EarlyStopping()
 
 # Training Loop
 print("[INFO] training the network...")
@@ -105,6 +113,11 @@ for e in tqdm(range(config.NUM_EPOCHS)):
 
     history["train_loss"].append(avg_train_loss.cpu().detach().numpy())
     history["test_loss"].append(avg_test_loss.cpu().detach().numpy())
+
+    lr_scheduler(avg_test_loss)
+    early_stopping(avg_test_loss)
+    if early_stopping.early_stop:
+        break
 
     print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
     print(

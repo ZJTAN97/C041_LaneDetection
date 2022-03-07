@@ -130,9 +130,9 @@ def main():
         with torch.no_grad():
 
             frame = drone.get_frame_read().frame
-            # frame = cv.flip(
-            #     frame, 0
-            # )  # uncomment when using drone / drone's footages
+            frame = cv.flip(
+                frame, 0
+            )  # uncomment when using drone / drone's footages
             frame = cv.resize(
                 frame, (config.INPUT_IMAGE_WIDTH, config.INPUT_IMAGE_HEIGHT)
             )

@@ -6,7 +6,6 @@ import os
 from djitellopy import tello
 import sys
 from pathlib import Path
-import keyboard
 
 myDir = os.getcwd()
 sys.path.append(myDir)
@@ -35,10 +34,13 @@ def auto_takeoff(predictions, img, drone):
             M = cv.moments(c)
             cX = int(M["m10"] / (M["m00"] if M["m00"] != 0 else 1))
             cY = int(M["m01"] / (M["m00"] if M["m00"] != 0 else 1))
-            cv.circle(img, (cX, cY), 5, (0, 0, 255), -1)
+            # cv.circle(img, (cX, cY), 5, (0, 0, 255), -1)
+
+            print(cY)
 
             if cY > 210:
-                drone.takeoff()
+                print("takeoff!")
+                # drone.takeoff()
 
         cv.fillPoly(img, contours, color=(0, 255, 0))
 

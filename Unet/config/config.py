@@ -39,9 +39,9 @@ BASE_OUTPUT = "output"
 
 # define the path to the output serialized model, model training
 # plot, and testing image paths
-PRE_TRAINED_WEIGHTS_PATH = os.path.join(BASE_OUTPUT, "unet_102_200.pth.tar")
+PRE_TRAINED_WEIGHTS_PATH = os.path.join(BASE_OUTPUT, "unet_130_100.pth.tar")
 MODEL_PATH = os.path.join(
-    BASE_OUTPUT, "unet_102_200.pth.tar"
+    BASE_OUTPUT, "unet_130_100.pth.tar"
 )  # unet_<num_images>_<num_epoch>
 PLOT_PATH = os.path.sep.join(
     [BASE_OUTPUT, "plot.png"]
