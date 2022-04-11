@@ -56,7 +56,7 @@ def get_motion(predictions, img):
         cv.drawContours(img, [boundingRect], -1, (0, 255, 0), 2)
         cv.circle(img, (cx, cy), 5, (255, 0, 0), cv.FILLED)
 
-        if cy < (y1 * 190) and cy < (y2 * 190):
+        if y1 > 60 and y2 > 60:
             land = True
         else:
             land = False

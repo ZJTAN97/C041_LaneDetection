@@ -34,18 +34,17 @@ def auto_takeoff(predictions, img, drone):
             M = cv.moments(c)
             cX = int(M["m10"] / (M["m00"] if M["m00"] != 0 else 1))
             cY = int(M["m01"] / (M["m00"] if M["m00"] != 0 else 1))
-            # cv.circle(img, (cX, cY), 5, (0, 0, 255), -1)
 
             print(cY)
 
-            if cY > 210:
+            cv.line(img, (255, cY), (0, cY), (255, 0, 0), 3)
+
+            if cY > 190:
+                cv.circle(img, (125, 125), 10, (0, 0, 255), -1)
                 print("takeoff!")
-                # drone.takeoff()
+                # drone.takeoff() # uncomment when ready to do actual takeoff
 
         cv.fillPoly(img, contours, color=(0, 255, 0))
-
-        # cv.polylines(img, biggestContours, True, (0,255,0), 2)
-        # cv.fillPoly(img, contours, color=(0,255,0))
 
 
 def main():
@@ -66,13 +65,9 @@ def main():
     drone.streamoff()  # clear any existing streams
     drone.streamon()
 
-    # cap = cv.VideoCapture("../dataset/test_videos/takeoff.mp4")
-
     while True:
 
         with torch.no_grad():
-
-            # success, frame = cap.read()
 
             frame = drone.get_frame_read().frame
             frame = cv.resize(
