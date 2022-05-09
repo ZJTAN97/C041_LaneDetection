@@ -42,7 +42,7 @@ def auto_takeoff(predictions, img, drone):
             if cY > 190:
                 cv.circle(img, (125, 125), 10, (0, 0, 255), -1)
                 print("takeoff!")
-                # drone.takeoff() # uncomment when ready to do actual takeoff
+                drone.takeoff()  # uncomment when ready to do actual takeoff
 
         cv.fillPoly(img, contours, color=(0, 255, 0))
 
